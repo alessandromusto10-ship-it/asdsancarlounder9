@@ -38,7 +38,7 @@ const WhatsAppPage = {
             </div>
           </div>
           <div class="form-group">
-            <label>🧦 Divisa / Kit</label>
+            <label> Divisa / Kit</label>
             <input type="text" id="conv-kit" class="form-control" value="Maglia granata, pantaloncini neri, calzettoni granata" />
           </div>
           <div class="form-group">
@@ -75,6 +75,9 @@ const WhatsAppPage = {
           <button id="btn-copy-msg" class="btn btn-secondary">📋 Copia</button>
         </div>
         <button id="btn-open-wa" class="btn btn-primary btn-block" style="margin-top: 8px;">📲 Apri WhatsApp</button>
+        <small style="display: block; text-align: center; margin-top: 6px; color: var(--gray-500); font-size: 11px;">
+          ℹ️ Apre sempre WhatsApp normale (non Business)
+        </small>
       </div>
 
       <!-- Messaggi Rapidi -->
@@ -171,7 +174,6 @@ const WhatsAppPage = {
   async loadExistingConvocation(matchId) {
     if (!matchId) return;
     
-    // Reset form
     document.getElementById('conv-date').value = '';
     document.getElementById('conv-location').value = '';
     document.getElementById('conv-meeting').value = '';
@@ -195,14 +197,11 @@ const WhatsAppPage = {
       if (data && data.length > 0) {
         const conv = data[0];
         this.currentConvocationId = conv.id;
-        document.getElementById('conv-date').value = ''; // La data la prendi dalla partita
-        document.getElementById('conv-location').value = ''; // Oppure salva nel form
         document.getElementById('conv-meeting').value = conv.meeting_time || '';
         document.getElementById('conv-kit').value = conv.kit_info || 'Maglia granata, pantaloncini neri, calzettoni granata';
         document.getElementById('conv-bring').value = conv.what_to_bring || '';
         document.getElementById('conv-notes').value = conv.notes || '';
         
-        // Imposta giocatori selezionati
         conv.players?.filter(p => p.selected).forEach(p => this.selectedPlayers.add(p.player_id));
         document.querySelectorAll('.player-cb').forEach(cb => {
           cb.checked = this.selectedPlayers.has(cb.value);
@@ -235,7 +234,6 @@ const WhatsAppPage = {
     const bring = document.getElementById('conv-bring').value;
     const notes = document.getElementById('conv-notes').value;
 
-    // Recupera nomi partite e giocatori per l'anteprima
     const matchOption = document.getElementById('conv-match').selectedOptions[0];
     const matchText = matchId ? matchOption.textContent : '[Partita non selezionata]';
     
@@ -250,7 +248,7 @@ const WhatsAppPage = {
 ⏰ *Ritrovo:* ${meeting || '[--:--]'} | *Inizio:* ${kickoff || '[--:--]'}
 📍 *Luogo:* ${location || '[Da definire]'}
 
-🧦 *Divisa:* ${kit}
+ *Divisa:* ${kit}
 🎒 *Da portare:* ${bring || '[Nessuna indicazione]'}
 
 👇 *CONVOCATI:*
@@ -277,11 +275,9 @@ Grazie e buon calcio! 🤝⚽`;
 
     try {
       if (this.currentConvocationId) {
-        // Update
         const { error } = await db.from('convocations').update(payload).eq('id', this.currentConvocationId);
         if (error) throw error;
         
-        // Sync players
         await db.from('convocation_players').delete().eq('convocation_id', this.currentConvocationId);
         const playerRows = Array.from(this.selectedPlayers).map(pid => ({
           convocation_id: this.currentConvocationId,
@@ -293,7 +289,6 @@ Grazie e buon calcio! 🤝⚽`;
           if (pErr) throw pErr;
         }
       } else {
-        // Insert
         const { data, error } = await db.from('convocations').insert(payload).select().single();
         if (error) throw error;
         this.currentConvocationId = data.id;
@@ -319,7 +314,6 @@ Grazie e buon calcio! 🤝⚽`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(msg).then(() => toast('Messaggio copiato! 📋', 'success'));
     } else {
-      // Fallback
       const ta = document.createElement('textarea');
       ta.value = msg;
       document.body.appendChild(ta);
@@ -330,10 +324,52 @@ Grazie e buon calcio! 🤝⚽`;
     }
   },
 
+  // ===== FUNZIONE CHIAVE: Apre SOLO WhatsApp normale =====
   openWhatsApp() {
     const msg = document.getElementById('msg-preview').value;
-    const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-    window.open(url, '_blank');
+    const encodedMsg = encodeURIComponent(msg);
+    
+    const isAndroid = /android/i.test(navigator.userAgent);
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    
+    try {
+      if (isAndroid) {
+        // Intent Android ESPlicito: forza WhatsApp normale (package: com.whatsapp)
+        // WhatsApp Business ha package: com.whatsapp.w4b
+        const intentUrl = `intent://send?text=${encodedMsg}#Intent;scheme=whatsapp;package=com.whatsapp;end`;
+        
+        // Prova ad aprire WhatsApp normale
+        window.location.href = intentUrl;
+        
+        // Fallback dopo 1.5 secondi se non si apre
+        setTimeout(() => {
+          // Se siamo ancora qui, WhatsApp non è installato
+          if (confirm('WhatsApp non sembra installato. Aprire WhatsApp Web?')) {
+            window.open(`https://web.whatsapp.com/send?text=${encodedMsg}`, '_blank');
+          }
+        }, 1500);
+        
+      } else if (isIOS) {
+        // Su iOS non c'è distinzione tra normale e Business
+        // Usa lo scheme whatsapp://
+        const waUrl = `whatsapp://send?text=${encodedMsg}`;
+        window.location.href = waUrl;
+        
+        setTimeout(() => {
+          if (confirm('WhatsApp non sembra installato. Aprire WhatsApp Web?')) {
+            window.open(`https://web.whatsapp.com/send?text=${encodedMsg}`, '_blank');
+          }
+        }, 1500);
+        
+      } else {
+        // Desktop: usa WhatsApp Web
+        window.open(`https://web.whatsapp.com/send?text=${encodedMsg}`, '_blank');
+      }
+    } catch (err) {
+      console.error('Errore apertura WhatsApp:', err);
+      // Fallback universale
+      window.open(`https://web.whatsapp.com/send?text=${encodedMsg}`, '_blank');
+    }
   },
 
   quickMessages: [
@@ -361,7 +397,7 @@ Grazie e buon calcio! 🤝⚽`;
     {
       label: '🩺 Scadenza Certificati',
       generator: () => {
-        return `🩺 *SCADENZA CERTIFICATI MEDICI*\nAi genitori ricordiamo di controllare la scadenza del certificato medico e di consegnare il rinnovo prima della data indicata. È obbligatorio per partecipare agli allenamenti e alle partite. Grazie per la collaborazione! 📋✅`;
+        return ` *SCADENZA CERTIFICATI MEDICI*\nAi genitori ricordiamo di controllare la scadenza del certificato medico e di consegnare il rinnovo prima della data indicata. È obbligatorio per partecipare agli allenamenti e alle partite. Grazie per la collaborazione! 📋✅`;
       }
     }
   ],
