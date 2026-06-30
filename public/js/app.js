@@ -24,11 +24,9 @@ function $$(sel) { return document.querySelectorAll(sel); }
 function initTheme() {
   const savedTheme = localStorage.getItem('theme');
   
-  // Se c'è una preferenza salvata, usala
   if (savedTheme) {
     document.documentElement.setAttribute('data-theme', savedTheme);
   } else {
-    // Altrimenti, default sempre chiaro
     document.documentElement.setAttribute('data-theme', 'light');
     localStorage.setItem('theme', 'light');
   }
@@ -55,7 +53,6 @@ function updateThemeIcon() {
   }
 }
 
-// Inizializza tema subito
 initTheme();
 
 // ===== INSTALL PWA =====
@@ -89,11 +86,46 @@ $('#btn-logout')?.addEventListener('click', async () => {
 // ===== TOGGLE TEMA =====
 $('#btn-theme')?.addEventListener('click', toggleTheme);
 
+// ===== BOTTOM SHEET (Menu Gestione) =====
+function openBottomSheet() {
+  const overlay = $('#bottom-sheet-overlay');
+  const sheet = $('#bottom-sheet');
+  const gearBtn = document.querySelector('.nav-item-gear');
+  
+  if (overlay && sheet) {
+    overlay.classList.add('show');
+    sheet.classList.add('show');
+    if (gearBtn) gearBtn.classList.add('open');
+  }
+}
+
+function closeBottomSheet() {
+  const overlay = $('#bottom-sheet-overlay');
+  const sheet = $('#bottom-sheet');
+  const gearBtn = document.querySelector('.nav-item-gear');
+  
+  if (overlay && sheet) {
+    overlay.classList.remove('show');
+    sheet.classList.remove('show');
+    if (gearBtn) gearBtn.classList.remove('open');
+  }
+}
+
+// Event listeners per bottom sheet
+$('#bottom-sheet-overlay')?.addEventListener('click', closeBottomSheet);
+$('#bottom-sheet-close')?.addEventListener('click', closeBottomSheet);
+
+// Chiudi con tasto ESC
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeBottomSheet();
+});
+
 // ===== NAV DINAMICA =====
 function renderNav(role) {
   const nav = $('#bottom-nav');
   if (!nav) return;
   
+  // Voci comuni a tutti (una sola riga)
   const common = [
     { path: '/', icon: '🏠', label: 'Home' },
     { path: '/calendar', icon: '📅', label: 'Calendario' },
@@ -102,38 +134,57 @@ function renderNav(role) {
     { path: '/attendance', icon: '✅', label: 'Presenze' }
   ];
   
-  const misterExtra = [
+  // Voci di gestione (solo mister, nel bottom sheet)
+  const managementItems = [
     { path: '/roster', icon: '👥', label: 'Rosa' },
     { path: '/championship', icon: '🏟️', label: 'Campionato' },
-    { path: '/trainings', icon: '🏃', label: 'Allenam.' },
+    { path: '/trainings', icon: '🏃', label: 'Allenamenti' },
     { path: '/results', icon: '📊', label: 'Risultati' },
     { path: '/stats', icon: '📈', label: 'Statistiche' },
     { path: '/whatsapp', icon: '📱', label: 'WhatsApp' }
   ];
   
-  const items = role === 'mister' ? [...common, ...misterExtra] : common;
-  
+  // Renderizza bottom sheet per il mister
   if (role === 'mister') {
+    const sheetContent = $('#bottom-sheet-content');
+    if (sheetContent) {
+      sheetContent.innerHTML = managementItems.map(item => `
+        <div class="bottom-sheet-item" data-path="${item.path}">
+          <div class="bottom-sheet-item-icon">${item.icon}</div>
+          <div class="bottom-sheet-item-label">${item.label}</div>
+        </div>
+      `).join('');
+      
+      // Click su item del bottom sheet
+      sheetContent.querySelectorAll('.bottom-sheet-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const path = item.dataset.path;
+          closeBottomSheet();
+          Router.navigate(path);
+        });
+      });
+    }
+    
+    // Nav con icona ingranaggio
     nav.innerHTML = `
-      <div style="display: flex; justify-content: space-around; width: 100%; padding-bottom: 4px; border-bottom: 1px solid var(--gray-200);">
-        ${common.map(i => `
-          <button class="nav-item" data-path="${i.path}" onclick="Router.navigate('${i.path}')">
-            <span class="nav-icon">${i.icon}</span>
-            <span>${i.label}</span>
-          </button>
-        `).join('')}
-      </div>
-      <div style="display: flex; justify-content: space-around; width: 100%; padding-top: 4px;">
-        ${misterExtra.map(i => `
-          <button class="nav-item" data-path="${i.path}" onclick="Router.navigate('${i.path}')">
-            <span class="nav-icon">${i.icon}</span>
-            <span>${i.label}</span>
-          </button>
-        `).join('')}
-      </div>
+      ${common.map(i => `
+        <button class="nav-item" data-path="${i.path}" onclick="Router.navigate('${i.path}')">
+          <span class="nav-icon">${i.icon}</span>
+          <span>${i.label}</span>
+        </button>
+      `).join('')}
+      <button class="nav-item nav-item-gear" id="btn-gear">
+        <span class="nav-icon">⚙️</span>
+        <span>Gestione</span>
+      </button>
     `;
+    
+    // Click su ingranaggio
+    $('#btn-gear')?.addEventListener('click', openBottomSheet);
+    
   } else {
-    nav.innerHTML = items.map(i => `
+    // Genitori: solo voci comuni, nessuna gestione
+    nav.innerHTML = common.map(i => `
       <button class="nav-item" data-path="${i.path}" onclick="Router.navigate('${i.path}')">
         <span class="nav-icon">${i.icon}</span>
         <span>${i.label}</span>
@@ -195,3 +246,4 @@ window.$ = $;
 window.$$ = $$;
 window.toggleTheme = toggleTheme;
 window.initTheme = initTheme;
+window.closeBottomSheet = closeBottomSheet;
