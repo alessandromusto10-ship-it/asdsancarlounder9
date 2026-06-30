@@ -13,12 +13,12 @@
   <title>ASD San Carlo Milano - Under 9</title>
   <link rel="stylesheet" href="/css/style.css" />
   
-  <!-- Script tema per evitare flash -->
+  <!-- Script tema: default sempre chiaro, salvo preferenza utente -->
   <script>
     (function() {
       const savedTheme = localStorage.getItem('theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+      // Se non c'è preferenza salvata, usa sempre il tema chiaro
+      const theme = savedTheme || 'light';
       document.documentElement.setAttribute('data-theme', theme);
     })();
   </script>
