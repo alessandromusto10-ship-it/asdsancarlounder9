@@ -39,7 +39,6 @@ const Auth = {
       try {
         console.log('🔗 Tentativo di collegamento giocatore:', playerId);
         
-        // Controlla lo stato attuale del giocatore
         const { data: playerData, error: fetchError } = await db
           .from('players')
           .select('parent_id, parent_id_2')
@@ -47,7 +46,7 @@ const Auth = {
           .single();
         
         if (fetchError) {
-          console.error('❌ Errore nel fetch del player:', fetchError);
+          console.error(' Errore nel fetch del player:', fetchError);
           throw fetchError;
         }
         
@@ -56,7 +55,6 @@ const Auth = {
         let updateError = null;
         
         if (!playerData.parent_id) {
-          // Slot 1 libero
           console.log('✅ Uso parent_id (slot 1)');
           const { error } = await db
             .from('players')
@@ -64,7 +62,6 @@ const Auth = {
             .eq('id', playerId);
           updateError = error;
         } else if (!playerData.parent_id_2) {
-          // Slot 2 libero
           console.log('✅ Uso parent_id_2 (slot 2)');
           const { error } = await db
             .from('players')
@@ -84,13 +81,13 @@ const Auth = {
         console.log('✅ Collegamento riuscito!');
       } catch (err) {
         console.error('❌ Errore nel collegamento genitore-figlio:', err);
-        // Non blocchiamo la registrazione, ma logghiamo l'errore
       }
     }
     
     return data;
   },
 
+  // ✅ NUOVA FUNZIONE: Login Google con whitelist mister
   async signInWithGoogle() {
     const { data, error } = await db.auth.signInWithOAuth({
       provider: 'google',
@@ -100,6 +97,58 @@ const Auth = {
       }
     });
     if (error) throw error;
+    return data;
+  },
+
+  // ✅ NUOVA FUNZIONE: Verifica e crea profilo mister da Google
+  async ensureMisterProfile(user) {
+    if (!user || !user.email) return null;
+    
+    console.log(' Verifica mister per email:', user.email);
+    
+    // 1. Controlla se l'email è nella whitelist
+    const { data: misterEntry, error: mErr } = await db
+      .from('authorized_misters')
+      .select('*')
+      .eq('email', user.email)
+      .single();
+    
+    if (mErr || !misterEntry) {
+      console.error('❌ Email non autorizzata come mister:', user.email);
+      return null;
+    }
+    
+    // 2. Controlla se il profilo esiste già
+    const { data: existingProfile } = await db
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    
+    if (existingProfile) {
+      console.log('✅ Profilo mister esistente trovato');
+      return existingProfile;
+    }
+    
+    // 3. Crea il profilo mister
+    const { data: newProfile, error: pErr } = await db
+      .from('profiles')
+      .insert({
+        id: user.id,
+        email: user.email,
+        full_name: misterEntry.full_name || user.user_metadata?.full_name || user.email,
+        role: 'mister'
+      })
+      .select()
+      .single();
+    
+    if (pErr) {
+      console.error('❌ Errore creazione profilo mister:', pErr);
+      throw pErr;
+    }
+    
+    console.log('✅ Profilo mister creato:', newProfile);
+    return newProfile;
   },
 
   async resetPassword(email) {
