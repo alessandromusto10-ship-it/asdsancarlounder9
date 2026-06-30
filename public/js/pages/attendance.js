@@ -334,13 +334,11 @@ const AttendancePage = {
               ${p.role ? `<div style="font-size: 11px; color: var(--gray-500); text-transform: capitalize;">${p.role}</div>` : ''}
             </div>
             <div class="attendance-buttons">
-              <button class="att-btn ${status === 'presente' ? 'active-presente' : ''}" 
-                      data-status="presente" ${!editable ? 'disabled' : ''}>✅</button>
-              <button class="att-btn ${status === 'assente' ? 'active-assente' : ''}" 
-                      data-status="assente" ${!editable ? 'disabled' : ''}>❌</button>
-              <button class="att-btn ${status === 'giustificato' ? 'active-giustificato' : ''}" 
-                      data-status="giustificato" ${!editable ? 'disabled' : ''}>⚠️</button>
-            </div>
+				<button class="att-btn ${status === 'presente' ? 'active-presente' : ''}" 
+				data-status="presente" ${!editable ? 'disabled' : ''}>✅</button>
+				<button class="att-btn ${status === 'assente' ? 'active-assente' : ''}" 
+				data-status="assente" ${!editable ? 'disabled' : ''}>❌</button>
+			</div>
           </div>
         `;
       });
