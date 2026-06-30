@@ -123,21 +123,9 @@ Router.register('/trainings', () => TrainingsPage.render());
 Router.register('/results', () => ResultsPage.render());
 Router.register('/roster', () => RosterPage.render());
 Router.register('/championship', () => ChampionshipPage.render());
+Router.register('/stats', () => StatsPage.render());
 
 // Placeholder per le prossime pagine (le implementeremo nei prossimi step)
-
-Router.register('/stats', async () => {
-  document.getElementById('view').innerHTML = `
-    <div class="card text-center" style="margin-top:20px;">
-      <h2 style="color: var(--granata);">📈 Statistiche</h2>
-      <p style="margin:12px 0; color: var(--gray-500);">
-        Prossimamente...<br>
-        <small>Statistiche presenze con export PDF.</small>
-      </p>
-      <button class="btn btn-primary" onclick="Router.navigate('/')">Torna alla Home</button>
-    </div>
-  `;
-});
 
 Router.register('/whatsapp', async () => {
   document.getElementById('view').innerHTML = `
