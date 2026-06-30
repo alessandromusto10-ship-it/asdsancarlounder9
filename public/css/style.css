@@ -54,14 +54,8 @@ html, body {
   overscroll-behavior: none;
 }
 
-/* Rimuovi scrollbar laterale su browser */
-html::-webkit-scrollbar {
-  display: none;
-}
-html {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+html::-webkit-scrollbar { display: none; }
+html { -ms-overflow-style: none; scrollbar-width: none; }
 
 #app {
   min-height: 100vh;
@@ -108,7 +102,6 @@ html {
 }
 .icon-btn:hover { background: rgba(255,255,255,0.25); }
 
-/* ===== THEME TOGGLE ===== */
 .theme-toggle {
   background: rgba(255,255,255,0.15);
   border: none;
@@ -128,7 +121,6 @@ html {
   transform: rotate(180deg);
 }
 
-/* ===== VIEW ===== */
 .view {
   flex: 1;
   padding: 16px;
@@ -173,17 +165,9 @@ html {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
-.nav-item .nav-icon { 
-  font-size: 24px;
-  line-height: 1;
-}
-.nav-item.active { 
-  color: var(--granata); 
-  font-weight: 700; 
-}
-.nav-item:active {
-  transform: scale(0.95);
-}
+.nav-item .nav-icon { font-size: 24px; line-height: 1; }
+.nav-item.active { color: var(--granata); font-weight: 700; }
+.nav-item:active { transform: scale(0.95); }
 
 /* ===== BUTTONS ===== */
 .btn {
@@ -259,7 +243,7 @@ select.form-control {
   gap: 8px;
 }
 
-/* ===== LOGIN - FIX COMPLETO ===== */
+/* ===== LOGIN - COMPATTO SU MOBILE ===== */
 .login-container {
   height: 100vh;
   height: 100dvh;
@@ -269,7 +253,6 @@ select.form-control {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  /* Gradiente sottile quasi impercettibile */
   background: linear-gradient(180deg, #7A1F2E 0%, #6B1A27 100%);
   overflow: hidden;
   position: relative;
@@ -281,11 +264,11 @@ select.form-control {
   padding: 32px 24px;
   width: 100%;
   max-width: 420px;
-  max-height: 90vh;
-  max-height: 90dvh;
+  max-height: 85vh;
+  max-height: 85dvh;
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
-  margin-top: 60px; /* Spazio per il banner install in alto */
+  margin-top: 50px;
 }
 
 .login-logo {
@@ -356,7 +339,6 @@ select.form-control {
 }
 .btn-google:hover { background: var(--gray-50); }
 
-/* Link login - FIX ALLINEAMENTO */
 .login-links {
   display: flex;
   align-items: center;
@@ -471,14 +453,14 @@ tr:nth-child(even) td { background: var(--gray-50); }
 .toast.success { background: var(--success); }
 .toast.error { background: var(--danger); }
 
-/* ===== INSTALL BANNER - SPOSTATO IN ALTO ===== */
+/* ===== INSTALL BANNER - COMPATTO ===== */
 .install-banner {
   position: fixed;
-  top: 16px;
-  left: 16px;
-  right: 16px;
+  top: 12px;
+  left: 12px;
+  right: 12px;
   background: var(--white);
-  padding: 12px;
+  padding: 8px 12px;
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
   display: flex;
@@ -489,7 +471,7 @@ tr:nth-child(even) td { background: var(--gray-50); }
   max-width: 420px;
   margin: 0 auto;
 }
-.install-banner span { flex: 1; font-size: 13px; }
+.install-banner span { flex: 1; font-size: 12px; }
 
 /* ===== UTILITIES ===== */
 .hidden { display: none !important; }
@@ -540,7 +522,7 @@ tr:nth-child(even) td { background: var(--gray-50); }
 .att-btn.active-assente { background: var(--danger); color: var(--white); border-color: var(--danger); }
 .att-btn.active-giustificato { background: var(--warning); color: var(--white); border-color: var(--warning); }
 
-/* ===== BOTTOM SHEET VERTICALE ===== */
+/* ===== BOTTOM SHEET ===== */
 .bottom-sheet-overlay {
   position: fixed;
   inset: 0;
@@ -550,10 +532,7 @@ tr:nth-child(even) td { background: var(--gray-50); }
   visibility: hidden;
   transition: opacity 0.3s, visibility 0.3s;
 }
-.bottom-sheet-overlay.show {
-  opacity: 1;
-  visibility: visible;
-}
+.bottom-sheet-overlay.show { opacity: 1; visibility: visible; }
 
 .bottom-sheet {
   position: fixed;
@@ -570,9 +549,7 @@ tr:nth-child(even) td { background: var(--gray-50); }
   max-height: 70vh;
   overflow-y: auto;
 }
-.bottom-sheet.show {
-  transform: translateY(0);
-}
+.bottom-sheet.show { transform: translateY(0); }
 
 .bottom-sheet-handle {
   width: 40px;
@@ -613,15 +590,9 @@ tr:nth-child(even) td { background: var(--gray-50); }
   min-height: 44px;
   min-width: 44px;
 }
-.bottom-sheet-close:hover {
-  background: var(--gray-200);
-}
+.bottom-sheet-close:hover { background: var(--gray-200); }
 
-.bottom-sheet-content {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+.bottom-sheet-content { display: flex; flex-direction: column; gap: 8px; }
 
 .bottom-sheet-item {
   display: flex;
@@ -641,202 +612,148 @@ tr:nth-child(even) td { background: var(--gray-50); }
   border-color: var(--granata);
   transform: translateX(4px);
 }
-.bottom-sheet-item:active {
-  transform: translateX(4px) scale(0.98);
-}
-.bottom-sheet-item-icon {
-  font-size: 24px;
-  width: 32px;
-  text-align: center;
-}
-.bottom-sheet-item-label {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--gray-900);
-  flex: 1;
-}
+.bottom-sheet-item:active { transform: translateX(4px) scale(0.98); }
+.bottom-sheet-item-icon { font-size: 24px; width: 32px; text-align: center; }
+.bottom-sheet-item-label { font-size: 15px; font-weight: 600; color: var(--gray-900); flex: 1; }
 
-.nav-item-gear {
-  position: relative;
-}
-.nav-item-gear.active {
-  color: var(--granata);
-}
-.nav-item-gear .nav-icon {
-  transition: transform 0.3s;
-}
-.nav-item-gear.open .nav-icon {
-  transform: rotate(90deg);
-}
+.nav-item-gear { position: relative; }
+.nav-item-gear.active { color: var(--granata); }
+.nav-item-gear .nav-icon { transition: transform 0.3s; }
+.nav-item-gear.open .nav-icon { transform: rotate(90deg); }
 
-/* ===== DARK MODE OVERRIDES ===== */
-:root[data-theme="dark"] .calendar-day {
-  background: var(--gray-200);
-}
-:root[data-theme="dark"] .calendar-day:hover {
-  background: var(--gray-300);
-}
-:root[data-theme="dark"] .calendar-day.today {
-  background: var(--granata);
-  color: var(--white);
-}
-:root[data-theme="dark"] .badge-success {
-  background: rgba(34,197,94,0.2);
-}
-:root[data-theme="dark"] .badge-danger {
-  background: rgba(239,68,68,0.2);
-}
-:root[data-theme="dark"] .badge-warning {
-  background: rgba(245,158,11,0.2);
-}
-:root[data-theme="dark"] .badge-granata {
-  background: rgba(160,50,74,0.2);
-}
-:root[data-theme="dark"] .btn-secondary {
-  background: var(--gray-200);
-  color: var(--granata-light);
-  border-color: var(--granata-light);
-}
-:root[data-theme="dark"] .btn-secondary:hover {
-  background: var(--granata);
-  color: var(--white);
-}
-:root[data-theme="dark"] .btn-google {
-  background: var(--gray-200);
-  color: var(--gray-900);
-  border-color: var(--gray-300);
-}
-:root[data-theme="dark"] .btn-google:hover {
-  background: var(--gray-300);
-}
-:root[data-theme="dark"] .role-tab.active {
-  background: var(--gray-100);
-  color: var(--granata-light);
-}
-:root[data-theme="dark"] .install-banner {
-  border-left-color: var(--granata-light);
-}
-:root[data-theme="dark"] .nav-item.active {
-  color: var(--granata-light);
-}
-:root[data-theme="dark"] .bottom-sheet {
-  background: var(--gray-100);
-}
-:root[data-theme="dark"] .bottom-sheet-item {
-  background: var(--gray-200);
-}
-:root[data-theme="dark"] .bottom-sheet-item:hover {
-  background: rgba(160, 50, 74, 0.15);
-  border-color: var(--granata-light);
-}
-:root[data-theme="dark"] .bottom-sheet-close {
-  background: var(--gray-200);
-  color: var(--gray-900);
-}
-:root[data-theme="dark"] .bottom-sheet-header {
-  border-bottom-color: var(--gray-300);
-}
+/* ===== DARK MODE ===== */
+:root[data-theme="dark"] .calendar-day { background: var(--gray-200); }
+:root[data-theme="dark"] .calendar-day:hover { background: var(--gray-300); }
+:root[data-theme="dark"] .calendar-day.today { background: var(--granata); color: var(--white); }
+:root[data-theme="dark"] .badge-success { background: rgba(34,197,94,0.2); }
+:root[data-theme="dark"] .badge-danger { background: rgba(239,68,68,0.2); }
+:root[data-theme="dark"] .badge-warning { background: rgba(245,158,11,0.2); }
+:root[data-theme="dark"] .badge-granata { background: rgba(160,50,74,0.2); }
+:root[data-theme="dark"] .btn-secondary { background: var(--gray-200); color: var(--granata-light); border-color: var(--granata-light); }
+:root[data-theme="dark"] .btn-secondary:hover { background: var(--granata); color: var(--white); }
+:root[data-theme="dark"] .btn-google { background: var(--gray-200); color: var(--gray-900); border-color: var(--gray-300); }
+:root[data-theme="dark"] .btn-google:hover { background: var(--gray-300); }
+:root[data-theme="dark"] .role-tab.active { background: var(--gray-100); color: var(--granata-light); }
+:root[data-theme="dark"] .install-banner { border-left-color: var(--granata-light); }
+:root[data-theme="dark"] .nav-item.active { color: var(--granata-light); }
+:root[data-theme="dark"] .bottom-sheet { background: var(--gray-100); }
+:root[data-theme="dark"] .bottom-sheet-item { background: var(--gray-200); }
+:root[data-theme="dark"] .bottom-sheet-item:hover { background: rgba(160, 50, 74, 0.15); border-color: var(--granata-light); }
+:root[data-theme="dark"] .bottom-sheet-close { background: var(--gray-200); color: var(--gray-900); }
+:root[data-theme="dark"] .bottom-sheet-header { border-bottom-color: var(--gray-300); }
 
-/* ===== RESPONSIVE ===== */
+/* ===== MOBILE - LOGIN COMPATTO ===== */
 @media (max-width: 480px) {
-  .view { 
-    padding: 12px;
-    padding-bottom: calc(110px + var(--safe-bottom));
-  }
+  .view { padding: 12px; padding-bottom: calc(110px + var(--safe-bottom)); }
   .calendar-day { font-size: 11px; }
   th, td { padding: 8px 6px; font-size: 12px; }
   
-  .bottom-nav { 
-    padding: 6px 2px calc(10px + var(--safe-bottom)); 
-  }
-  .nav-item { 
-    font-size: 10px; 
-    padding: 6px 2px; 
-    gap: 3px;
-  }
-  .nav-item .nav-icon { 
-    font-size: 22px; 
-  }
+  .bottom-nav { padding: 6px 2px calc(10px + var(--safe-bottom)); }
+  .nav-item { font-size: 10px; padding: 6px 2px; gap: 3px; }
+  .nav-item .nav-icon { font-size: 22px; }
   
-  .bottom-sheet-item {
-    padding: 12px 14px;
-  }
-  .bottom-sheet-item-icon { 
-    font-size: 22px;
-    width: 28px;
-  }
-  .bottom-sheet-item-label { 
-    font-size: 14px; 
-  }
+  .bottom-sheet-item { padding: 12px 14px; }
+  .bottom-sheet-item-icon { font-size: 22px; width: 28px; }
+  .bottom-sheet-item-label { font-size: 14px; }
   
-  /* Login box più compatta su mobile */
+  /* LOGIN COMPATTO SU MOBILE */
   .login-box {
-    padding: 24px 20px;
-    margin-top: 70px; /* Più spazio per il banner in alto */
+    padding: 20px 16px;
+    margin-top: 60px;
+    max-height: 80vh;
+    max-height: 80dvh;
+  }
+  .login-logo {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 12px;
   }
   .login-title {
-    font-size: 20px;
+    font-size: 18px;
+    margin-bottom: 2px;
   }
-  .login-links .link {
+  .login-subtitle {
     font-size: 12px;
+    margin-bottom: 16px;
   }
-  
-  /* Banner install più piccolo su mobile */
-  .install-banner {
-    padding: 10px;
-    top: 12px;
-    left: 12px;
-    right: 12px;
+  .role-tabs {
+    margin-bottom: 16px;
   }
-  .install-banner span {
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 360px) {
-  .nav-item {
-    font-size: 9px;
-    padding: 4px 1px;
-  }
-  .nav-item .nav-icon {
-    font-size: 20px;
-  }
-  .bottom-sheet-item {
-    padding: 10px 12px;
-  }
-  .bottom-sheet-item-icon {
-    font-size: 20px;
-    width: 26px;
-  }
-  .bottom-sheet-item-label {
+  .role-tab {
+    padding: 8px;
     font-size: 13px;
+    min-height: 40px;
+  }
+  .form-group {
+    margin-bottom: 12px;
+  }
+  .form-control {
+    padding: 10px 12px;
+    font-size: 14px;
+    min-height: 40px;
+  }
+  .btn {
+    padding: 10px 16px;
+    font-size: 14px;
+    min-height: 40px;
+  }
+  .divider {
+    margin: 12px 0;
+    font-size: 12px;
+  }
+  .login-links {
+    margin-top: 16px;
+    gap: 8px;
   }
   .login-links .link {
     font-size: 11px;
   }
-  .login-box {
-    margin-top: 75px;
-    padding: 20px 16px;
+  .login-links .separator {
+    font-size: 10px;
+  }
+  
+  /* Banner install più piccolo */
+  .install-banner {
+    padding: 6px 10px;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+  }
+  .install-banner span {
+    font-size: 11px;
+  }
+  .install-banner .btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    min-height: 32px;
   }
 }
 
-/* ===== DESKTOP - Login box più larga ===== */
+@media (max-width: 360px) {
+  .nav-item { font-size: 9px; padding: 4px 1px; }
+  .nav-item .nav-icon { font-size: 20px; }
+  .bottom-sheet-item { padding: 10px 12px; }
+  .bottom-sheet-item-icon { font-size: 20px; width: 26px; }
+  .bottom-sheet-item-label { font-size: 13px; }
+  
+  .login-box {
+    padding: 16px 12px;
+    margin-top: 65px;
+  }
+  .login-title { font-size: 16px; }
+  .login-links .link { font-size: 10px; }
+}
+
+/* ===== DESKTOP ===== */
 @media (min-width: 768px) {
   .login-box {
     max-width: 480px;
     padding: 40px 32px;
   }
-  .login-title {
-    font-size: 26px;
-  }
-  .login-logo {
-    width: 100px;
-    height: 100px;
-  }
+  .login-title { font-size: 26px; }
+  .login-logo { width: 100px; height: 100px; }
 }
 
 @media (min-width: 1024px) {
-  .login-box {
-    max-width: 520px;
-  }
+  .login-box { max-width: 520px; }
 }
