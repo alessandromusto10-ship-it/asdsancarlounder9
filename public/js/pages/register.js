@@ -139,7 +139,7 @@ const RegisterPage = {
       
       try {
         await Auth.signUp(email, password, name, currentRole, playerId || null);
-        toast('Registrazione completata! Controlla la tua email per confermare.', 'success');
+        toast('Registrazione completata! Ora puoi accedere. ✅', 'success');
         setTimeout(() => Router.navigate('/login'), 2000);
       } catch (err) {
         toast(err.message || 'Errore registrazione', 'error');
