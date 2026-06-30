@@ -337,7 +337,7 @@ const AttendancePage = {
               <button class="att-btn ${status === 'presente' ? 'active-presente' : ''}" 
                       data-status="presente" ${!editable ? 'disabled' : ''}>✅</button>
               <button class="att-btn ${status === 'assente' ? 'active-assente' : ''}" 
-                      data-status="assente" ${!editable ? 'disabled' : ''}></button>
+                      data-status="assente" ${!editable ? 'disabled' : ''}>❌</button>
               <button class="att-btn ${status === 'giustificato' ? 'active-giustificato' : ''}" 
                       data-status="giustificato" ${!editable ? 'disabled' : ''}>⚠️</button>
             </div>
