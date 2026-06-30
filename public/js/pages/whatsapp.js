@@ -7,11 +7,11 @@ const WhatsAppPage = {
   EQUIPMENT_LIST: [
     { id: 'borraccia', label: 'Borraccia', emoji: '💧' },
     { id: 'pantaloncini', label: 'Pantaloncini ERREA', emoji: '🩳' },
-    { id: 'parastinchi', label: 'Parastinchi', emoji: '🛡️' },
+    { id: 'parastinchi', label: 'Parastinchi', emoji: '🦵' },
     { id: 'scarpe', label: 'Scarpe da calcio', emoji: '👟' },
     { id: 'maglia', label: 'Maglia con numero', emoji: '👕' },
     { id: 'calzettoni', label: 'Calzettoni', emoji: '🧦' },
-    { id: 'tuta', label: 'Tuta di rappresentanza', emoji: '🧥' },
+    { id: 'tuta', label: 'Tuta di rappresentanza', emoji: '🏃‍♂️' },
     { id: 'giaccone', label: 'Giaccone', emoji: '🧥' },
     { id: 'kway', label: 'Kway', emoji: '🌧️' }
   ],
@@ -56,7 +56,7 @@ const WhatsAppPage = {
             <input type="text" id="conv-kit" class="form-control" value="Maglia granata, pantaloncini neri, calzettoni granata" />
           </div>
 
-          <!--  Cosa Portare (Selezione Multipla) -->
+          <!-- Cosa Portare (Selezione Multipla) -->
           <div class="form-group">
             <label>🎒 Cosa Portare</label>
             <div class="role-tabs" style="margin-bottom: 8px;">
@@ -78,7 +78,7 @@ const WhatsAppPage = {
       <!-- Selezione Convocati -->
       <div class="card">
         <div class="flex-between mb-4">
-          <div class="card-title" style="margin-bottom: 0;"> Convocati</div>
+          <div class="card-title" style="margin-bottom: 0;">👇 Convocati</div>
           <div style="display: flex; gap: 6px;">
             <button id="btn-select-all" class="btn btn-ghost" style="font-size: 12px; padding: 4px 8px;">✅ Tutti</button>
             <button id="btn-deselect-all" class="btn btn-ghost" style="font-size: 12px; padding: 4px 8px;">❌ Nessuno</button>
@@ -91,7 +91,7 @@ const WhatsAppPage = {
 
       <!-- Anteprima & Azioni -->
       <div class="card">
-        <div class="card-title"> Anteprima Messaggio</div>
+        <div class="card-title">📱 Anteprima Messaggio</div>
         <textarea id="msg-preview" class="form-control" rows="12" readonly style="font-family: monospace; font-size: 13px; background: var(--gray-50);"></textarea>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;">
           <button id="btn-save-conv" class="btn btn-secondary">💾 Salva Bozza</button>
@@ -99,7 +99,7 @@ const WhatsAppPage = {
         </div>
         <button id="btn-open-wa" class="btn btn-primary btn-block" style="margin-top: 8px;">📲 Apri WhatsApp</button>
         <small style="display: block; text-align: center; margin-top: 6px; color: var(--gray-500); font-size: 11px;">
-          ️ Apre sempre WhatsApp normale (non Business)
+          ℹ️ Apre sempre WhatsApp normale (non Business)
         </small>
       </div>
 
@@ -260,7 +260,7 @@ const WhatsAppPage = {
         document.getElementById('conv-kit').value = conv.kit_info || 'Maglia granata, pantaloncini neri, calzettoni granata';
         document.getElementById('conv-notes').value = conv.notes || '';
         
-        // Ripristina attrezzatura salvata (separata da virgola)
+        // Ripristina attrezzatura salvata
         if (conv.what_to_bring) {
           const savedEquip = conv.what_to_bring.split(',').filter(id => id.trim());
           savedEquip.forEach(id => this.selectedEquipment.add(id));
@@ -309,7 +309,7 @@ const WhatsAppPage = {
       .map(cb => cb.parentElement.querySelector('span:nth-child(2)').textContent)
       .join('\n');
 
-    // 🎒 Attrezzatura uno sotto l'altro con emoji
+    // Attrezzatura uno sotto l'altro con emoji
     const selectedEquip = Array.from(document.querySelectorAll('.equip-cb:checked'))
       .map(cb => {
         const item = this.EQUIPMENT_LIST.find(e => e.id === cb.value);
@@ -332,8 +332,9 @@ ${selectedEquip || '[Nessun articolo selezionato]'}
 👇 *CONVOCATI:*
 ${selectedNames || '[Nessun giocatore selezionato]'}
 
-${notes ? ` *Note:* ${notes}\n` : ''}
-*Grazie e forza ragazzi!* ⚽`;
+${notes ? `📝 *Note:* ${notes}\n` : ''}
+✅ *Si prega di confermare la presenza al più presto.*
+Grazie e buon calcio! ⚽`;
 
     document.getElementById('msg-preview').value = msg;
   },
@@ -342,7 +343,6 @@ ${notes ? ` *Note:* ${notes}\n` : ''}
     const matchId = document.getElementById('conv-match').value;
     if (!matchId) return toast('Seleziona una partita', 'error');
     
-    // Salva attrezzatura come stringa separata da virgola
     const whatToBring = Array.from(this.selectedEquipment).join(',');
 
     const payload = {
@@ -400,12 +400,18 @@ ${notes ? ` *Note:* ${notes}\n` : ''}
       ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
-      toast('Messaggio copiato! ', 'success');
+      toast('Messaggio copiato! 📋', 'success');
     }
   },
 
+  // ===== APRI WHATSAPP NORMALE (non Business) =====
   openWhatsApp() {
     const msg = document.getElementById('msg-preview').value;
+    this.openWhatsAppWithMessage(msg);
+  },
+
+  // ===== NUOVA FUNZIONE: Apre WhatsApp con messaggio personalizzato =====
+  openWhatsAppWithMessage(msg) {
     const encodedMsg = encodeURIComponent(msg);
     
     const isAndroid = /android/i.test(navigator.userAgent);
@@ -413,6 +419,7 @@ ${notes ? ` *Note:* ${notes}\n` : ''}
     
     try {
       if (isAndroid) {
+        // Intent Android ESPlicito: forza WhatsApp normale (package: com.whatsapp)
         const intentUrl = `intent://send?text=${encodedMsg}#Intent;scheme=whatsapp;package=com.whatsapp;end`;
         window.location.href = intentUrl;
         
@@ -441,12 +448,13 @@ ${notes ? ` *Note:* ${notes}\n` : ''}
     }
   },
 
+  // ===== MESSAGGI RAPIDI AGGIORNATI =====
   quickMessages: [
     {
-      label: '🏃‍️ Promemoria Presenza',
+      label: '🏃‍♂️ Promemoria Allenamento',
       generator: () => {
         const date = document.getElementById('conv-date').value || '[data allenamento]';
-        return `🔔 *PROMEMORIA*\nCiao a tutti! Ricordatevi di confermare la presenza per l'allenamento/partita del ${date}. Grazie! ⚽`;
+        return `🔔 *PROMEMORIA ALLENAMENTO*\n\nCiao a tutti! Ricordatevi di confermare la presenza per l'allenamento del ${date ? new Date(date).toLocaleDateString('it-IT') : '[data da definire]'}.\n\n📲 Conferma qui: https://under9.asdsancarlomilano.it\n\nGrazie! ⚽`;
       }
     },
     {
@@ -454,36 +462,49 @@ ${notes ? ` *Note:* ${notes}\n` : ''}
       generator: () => {
         const match = document.getElementById('conv-match').selectedOptions[0]?.textContent || '[partita]';
         const time = document.getElementById('conv-meeting').value || '[ora]';
-        return `⚽ *RICORDO PARTITA*\nVi aspetto per ${match}!\n⏰ Ritrovo: ${time}\nPortate tutto il materiale e tanta grinta! 💪🤝`;
+        return `⚽ *RICORDO PARTITA*\n\nVi aspetto per ${match}!\n⏰ Ritrovo: ${time}\n\nPortate tutto il materiale e tanta grinta! 💪🤝`;
       }
     },
     {
       label: '📢 Cambio Orario/Luogo',
       generator: () => {
-        return `📢 *AGGIORNAMENTO IMPORTANTE*\nL'allenamento/partita subisce una variazione.\n📍 Nuovo luogo: [Da comunicare]\n⏰ Nuovo orario: [Da comunicare]\nVi preghiamo di confermare la ricezione. Grazie! 🙏`;
+        return `📢 *AGGIORNAMENTO IMPORTANTE*\n\nL'allenamento/partita subisce una variazione.\n📍 Nuovo luogo: [Da comunicare]\n⏰ Nuovo orario: [Da comunicare]\n\nVi preghiamo di confermare la ricezione. Grazie! 🙏`;
       }
     },
     {
       label: '🩺 Scadenza Certificati',
       generator: () => {
-        return ` *SCADENZA CERTIFICATI MEDICI*\nAi genitori ricordiamo di controllare la scadenza del certificato medico e di consegnare il rinnovo prima della data indicata. È obbligatorio per partecipare agli allenamenti e alle partite. Grazie per la collaborazione! 📋✅`;
+        return `🩺 *SCADENZA CERTIFICATI MEDICI*\n\nAi genitori ricordiamo di controllare la scadenza del certificato medico e di consegnare il rinnovo prima della data indicata. È obbligatorio per partecipare agli allenamenti e alle partite.\n\nGrazie per la collaborazione! 📋✅`;
       }
     }
   ],
 
+  // ===== RENDER MESSAGGI RAPIDI CON DUE PULSANTI =====
   renderQuickMessages() {
     const container = document.getElementById('quick-msgs-list');
     container.innerHTML = this.quickMessages.map((qm, i) => `
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--gray-200);">
-        <span style="font-size: 14px; font-weight: 500;">${qm.label}</span>
-        <button class="btn btn-ghost" data-idx="${i}" style="font-size: 12px; padding: 4px 10px;">📋 Copia</button>
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--gray-200); gap: 8px;">
+        <span style="font-size: 14px; font-weight: 500; flex: 1; min-width: 0;">${qm.label}</span>
+        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+          <button class="btn btn-secondary" data-copy-idx="${i}" style="font-size: 12px; padding: 6px 12px; min-height: 32px;">📋 Copia</button>
+          <button class="btn btn-primary" data-wa-idx="${i}" style="font-size: 12px; padding: 6px 12px; min-height: 32px;">📲 WhatsApp</button>
+        </div>
       </div>
     `).join('');
 
-    container.querySelectorAll('button[data-idx]').forEach(btn => {
+    // Pulsanti Copia
+    container.querySelectorAll('button[data-copy-idx]').forEach(btn => {
       btn.addEventListener('click', () => {
-        const msg = this.quickMessages[parseInt(btn.dataset.idx)].generator();
+        const msg = this.quickMessages[parseInt(btn.dataset.copyIdx)].generator();
         navigator.clipboard?.writeText(msg).then(() => toast('Messaggio copiato! 📋', 'success'));
+      });
+    });
+
+    // Pulsanti WhatsApp
+    container.querySelectorAll('button[data-wa-idx]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const msg = this.quickMessages[parseInt(btn.dataset.waIdx)].generator();
+        this.openWhatsAppWithMessage(msg);
       });
     });
   }
