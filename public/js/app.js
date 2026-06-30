@@ -99,6 +99,7 @@ function renderNav(role) {
   if (!nav) return;
 
   if (role === 'mister') {
+    // Elementi dentro il menu Gestione
     const managementItems = [
       { path: '/attendance', icon: '✅', label: 'Presenze' },
       { path: '/roster', icon: '👥', label: 'Rosa' },
@@ -108,6 +109,7 @@ function renderNav(role) {
       { path: '/stats', icon: '📈', label: 'Statistiche' }
     ];
 
+    // Renderizza contenuto bottom sheet
     const sheetContent = $('#bottom-sheet-content');
     if (sheetContent) {
       sheetContent.innerHTML = managementItems.map(item => `
@@ -125,6 +127,7 @@ function renderNav(role) {
       });
     }
 
+    // Nav principale mister: 6 voci (incluso WhatsApp)
     nav.innerHTML = `
       <button class="nav-item" data-path="/" onclick="Router.navigate('/')">
         <span class="nav-icon">🏠</span><span>Home</span>
@@ -149,6 +152,7 @@ function renderNav(role) {
     $('#btn-gear')?.addEventListener('click', openBottomSheet);
 
   } else {
+    // Genitori: 5 voci (SENZA WhatsApp)
     nav.innerHTML = `
       <button class="nav-item" data-path="/" onclick="Router.navigate('/')">
         <span class="nav-icon">🏠</span><span>Home</span>
@@ -164,9 +168,6 @@ function renderNav(role) {
       </button>
       <button class="nav-item" data-path="/attendance" onclick="Router.navigate('/attendance')">
         <span class="nav-icon">✅</span><span>Presenze</span>
-      </button>
-      <button class="nav-item" data-path="/whatsapp" onclick="Router.navigate('/whatsapp')">
-        <span class="nav-icon">📱</span><span>WhatsApp</span>
       </button>
     `;
   }
@@ -230,6 +231,7 @@ async function init() {
       }
     }
     
+    // Profilo esistente (genitore o mister già configurato)
     $('#app-header')?.classList.remove('hidden');
     $('#bottom-nav')?.classList.remove('hidden');
     const userNameEl = $('#user-name');
@@ -248,7 +250,7 @@ async function init() {
 db.auth.onAuthStateChange(() => init());
 init();
 
-// Esponi utility
+// Esponi utility globali
 window.toast = toast;
 window.formatDate = formatDate;
 window.formatTime = formatTime;
