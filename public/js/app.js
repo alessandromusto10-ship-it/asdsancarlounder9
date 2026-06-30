@@ -124,21 +124,10 @@ Router.register('/results', () => ResultsPage.render());
 Router.register('/roster', () => RosterPage.render());
 Router.register('/championship', () => ChampionshipPage.render());
 Router.register('/stats', () => StatsPage.render());
+Router.register('/whatsapp', () => WhatsAppPage.render());
 
 // Placeholder per le prossime pagine (le implementeremo nei prossimi step)
 
-Router.register('/whatsapp', async () => {
-  document.getElementById('view').innerHTML = `
-    <div class="card text-center" style="margin-top:20px;">
-      <h2 style="color: var(--granata);">📱 WhatsApp</h2>
-      <p style="margin:12px 0; color: var(--gray-500);">
-        Prossimamente...<br>
-        <small>Convocazioni e messaggi rapidi per i genitori.</small>
-      </p>
-      <button class="btn btn-primary" onclick="Router.navigate('/')">Torna alla Home</button>
-    </div>
-  `;
-});
 
 // ===== INIT =====
 async function init() {
