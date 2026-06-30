@@ -333,8 +333,7 @@ ${selectedEquip || '[Nessun articolo selezionato]'}
 ${selectedNames || '[Nessun giocatore selezionato]'}
 
 ${notes ? ` *Note:* ${notes}\n` : ''}
-✅ *Si prega di confermare la presenza al più presto.*
-Grazie e buon calcio! ⚽`;
+*Grazie e forza ragazzi!* ⚽`;
 
     document.getElementById('msg-preview').value = msg;
   },
