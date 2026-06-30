@@ -1,12 +1,6 @@
-// =====================================================================
-// ASD San Carlo Milano - Under 9
-// File principale dell'applicazione
-// =====================================================================
-
 // ===== UTILITY GLOBALI =====
 function toast(msg, type = '') {
   const t = document.getElementById('toast');
-  if (!t) return;
   t.textContent = msg;
   t.className = 'toast show ' + type;
   setTimeout(() => t.classList.remove('show'), 3000);
@@ -58,141 +52,130 @@ $('#btn-logout')?.addEventListener('click', async () => {
 function renderNav(role) {
   const nav = $('#bottom-nav');
   if (!nav) return;
-
+  
+  // Voci comuni a tutti
   const common = [
     { path: '/', icon: '🏠', label: 'Home' },
     { path: '/calendar', icon: '📅', label: 'Calendario' },
-    { path: '/matches', icon: '🏆', label: 'Partite' },
+    { path: '/matches', icon: '⚽', label: 'Partite' },
     { path: '/standings', icon: '🥇', label: 'Classifica' },
     { path: '/attendance', icon: '✅', label: 'Presenze' }
   ];
-
-  const mister = [
+  
+  // Voci extra solo per i mister
+  const misterExtra = [
     { path: '/roster', icon: '👥', label: 'Rosa' },
     { path: '/championship', icon: '🏟️', label: 'Campionato' },
     { path: '/trainings', icon: '🏃', label: 'Allenam.' },
-    { path: '/stats', icon: '📊', label: 'Stats' },
+    { path: '/results', icon: '📊', label: 'Risultati' },
+    { path: '/stats', icon: '📈', label: 'Statistiche' },
     { path: '/whatsapp', icon: '📱', label: 'WhatsApp' }
   ];
-
-  const items = role === 'mister' ? [...common, ...mister] : common;
-
-  nav.innerHTML = items.map(i => `
-    <button class="nav-item" data-path="${i.path}" onclick="Router.navigate('${i.path}')">
-      <span class="nav-icon">${i.icon}</span>
-      <span>${i.label}</span>
-    </button>
-  `).join('');
+  
+  const items = role === 'mister' ? [...common, ...misterExtra] : common;
+  
+  // Se mister, nav a due righe per non affollare
+  if (role === 'mister') {
+    nav.innerHTML = `
+      <div style="display: flex; justify-content: space-around; width: 100%; padding-bottom: 4px; border-bottom: 1px solid var(--gray-200);">
+        ${common.map(i => `
+          <button class="nav-item" data-path="${i.path}" onclick="Router.navigate('${i.path}')">
+            <span class="nav-icon">${i.icon}</span>
+            <span>${i.label}</span>
+          </button>
+        `).join('')}
+      </div>
+      <div style="display: flex; justify-content: space-around; width: 100%; padding-top: 4px;">
+        ${misterExtra.map(i => `
+          <button class="nav-item" data-path="${i.path}" onclick="Router.navigate('${i.path}')">
+            <span class="nav-icon">${i.icon}</span>
+            <span>${i.label}</span>
+          </button>
+        `).join('')}
+      </div>
+    `;
+  } else {
+    nav.innerHTML = items.map(i => `
+      <button class="nav-item" data-path="${i.path}" onclick="Router.navigate('${i.path}')">
+        <span class="nav-icon">${i.icon}</span>
+        <span>${i.label}</span>
+      </button>
+    `).join('');
+  }
 }
 
-// =====================================================================
-// REGISTRAZIONE ROUTES
-// =====================================================================
+// ===== REGISTRAZIONE ROUTES =====
 
-// ----- Pagine pubbliche -----
+// --- Pagine pubbliche ---
 Router.register('/login', () => LoginPage.render());
 Router.register('/register', () => RegisterPage.render());
 Router.register('/reset', () => ResetPage.render());
 
-// ----- Home -----
+// --- Pagine comuni (genitori + mister) ---
 Router.register('/', () => HomePage.render());
-
-// ----- Pagine comuni (genitori + mister) -----
 Router.register('/calendar', () => CalendarPage.render());
 Router.register('/matches', () => MatchesPage.render());
 Router.register('/standings', () => StandingsPage.render());
 Router.register('/attendance', () => AttendancePage.render());
 
-// ----- Pagine solo mister -----
-Router.register('/roster', () => RosterPage.render());
-Router.register('/championship', () => ChampionshipPage.render());
+// --- Pagine solo mister ---
 Router.register('/trainings', () => TrainingsPage.render());
-Router.register('/stats', () => StatsPage.render());
-Router.register('/whatsapp', () => WhatsAppPage.render());
+Router.register('/results', () => ResultsPage.render());
 
-// =====================================================================
-// PLACEHOLDER per le pagine non ancora implementate
-// (verranno sostituite nei prossimi step)
-// =====================================================================
+// Placeholder per le prossime pagine (le implementeremo nei prossimi step)
+Router.register('/roster', async () => {
+  document.getElementById('view').innerHTML = `
+    <div class="card text-center" style="margin-top:20px;">
+      <h2 style="color: var(--granata);">👥 Gestione Rosa</h2>
+      <p style="margin:12px 0; color: var(--gray-500);">
+        Prossimamente...<br>
+        <small>Potrai aggiungere giocatori con nome, cognome, data di nascita e ruolo.</small>
+      </p>
+      <button class="btn btn-primary" onclick="Router.navigate('/')">Torna alla Home</button>
+    </div>
+  `;
+});
 
-// ----- Classifica (punto 4) -----
-window.StandingsPage = {
-  async render() {
-    document.getElementById('view').innerHTML = `
-      <div class="card text-center" style="margin-top:20px;">
-        <h2 style="color: var(--granata);">🥇 Classifica</h2>
-        <p style="margin:12px 0; color: var(--gray-500);">
-          Prossimamente...<br>
-          <small>Calcolo basato sui tempi vinti</small>
-        </p>
-      </div>
-    `;
-  }
-};
+Router.register('/championship', async () => {
+  document.getElementById('view').innerHTML = `
+    <div class="card text-center" style="margin-top:20px;">
+      <h2 style="color: var(--granata);">🏟️ Gestione Campionato</h2>
+      <p style="margin:12px 0; color: var(--gray-500);">
+        Prossimamente...<br>
+        <small>Potrai gestire squadre del girone, partite di andata/ritorno e risultati.</small>
+      </p>
+      <button class="btn btn-primary" onclick="Router.navigate('/')">Torna alla Home</button>
+    </div>
+  `;
+});
 
-// ----- Rosa (punto 5) -----
-window.RosterPage = {
-  async render() {
-    document.getElementById('view').innerHTML = `
-      <div class="card text-center" style="margin-top:20px;">
-        <h2 style="color: var(--granata);">👥 Rosa</h2>
-        <p style="margin:12px 0; color: var(--gray-500);">
-          Prossimamente...<br>
-          <small>Gestione giocatori con ruoli</small>
-        </p>
-      </div>
-    `;
-  }
-};
+Router.register('/stats', async () => {
+  document.getElementById('view').innerHTML = `
+    <div class="card text-center" style="margin-top:20px;">
+      <h2 style="color: var(--granata);">📈 Statistiche</h2>
+      <p style="margin:12px 0; color: var(--gray-500);">
+        Prossimamente...<br>
+        <small>Statistiche presenze con export PDF.</small>
+      </p>
+      <button class="btn btn-primary" onclick="Router.navigate('/')">Torna alla Home</button>
+    </div>
+  `;
+});
 
-// ----- Campionato (punto 6) -----
-window.ChampionshipPage = {
-  async render() {
-    document.getElementById('view').innerHTML = `
-      <div class="card text-center" style="margin-top:20px;">
-        <h2 style="color: var(--granata);">🏟️ Campionato</h2>
-        <p style="margin:12px 0; color: var(--gray-500);">
-          Prossimamente...<br>
-          <small>Gestione squadre e partite</small>
-        </p>
-      </div>
-    `;
-  }
-};
+Router.register('/whatsapp', async () => {
+  document.getElementById('view').innerHTML = `
+    <div class="card text-center" style="margin-top:20px;">
+      <h2 style="color: var(--granata);">📱 WhatsApp</h2>
+      <p style="margin:12px 0; color: var(--gray-500);">
+        Prossimamente...<br>
+        <small>Convocazioni e messaggi rapidi per i genitori.</small>
+      </p>
+      <button class="btn btn-primary" onclick="Router.navigate('/')">Torna alla Home</button>
+    </div>
+  `;
+});
 
-// ----- Statistiche (punto 7) -----
-window.StatsPage = {
-  async render() {
-    document.getElementById('view').innerHTML = `
-      <div class="card text-center" style="margin-top:20px;">
-        <h2 style="color: var(--granata);">📊 Statistiche</h2>
-        <p style="margin:12px 0; color: var(--gray-500);">
-          Prossimamente...<br>
-          <small>Presenze con export PDF</small>
-        </p>
-      </div>
-    `;
-  }
-};
-
-// ----- WhatsApp (punto 8) -----
-window.WhatsAppPage = {
-  async render() {
-    document.getElementById('view').innerHTML = `
-      <div class="card text-center" style="margin-top:20px;">
-        <h2 style="color: var(--granata);">📱 WhatsApp</h2>
-        <p style="margin:12px 0; color: var(--gray-500);">
-          Prossimamente...<br>
-          <small>Convocazioni e messaggi rapidi</small>
-        </p>
-      </div>
-    `;
-  }
-};
-
-// =====================================================================
-// INIT
-// =====================================================================
+// ===== INIT =====
 async function init() {
   const auth = await Auth.getCurrentUser();
   
@@ -212,13 +195,15 @@ async function init() {
   Router.resolve();
 }
 
-// Riascolta i cambiamenti di auth (login/logout)
+// Riascolto i cambiamenti di auth (login/logout)
 db.auth.onAuthStateChange(() => init());
 
-// Avvio
+// Avvio iniziale
 init();
 
-// Esponi utility globalmente
+// Esponi utility globali
 window.toast = toast;
 window.formatDate = formatDate;
 window.formatTime = formatTime;
+window.$ = $;
+window.$$ = $$;
