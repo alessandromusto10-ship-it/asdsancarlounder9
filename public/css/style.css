@@ -518,6 +518,151 @@ tr:nth-child(even) td { background: var(--gray-50); }
   color: var(--granata-light);
 }
 
+/* ===== BOTTOM SHEET (Menu Gestione) ===== */
+.bottom-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 199;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+.bottom-sheet-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--white);
+  border-radius: 20px 20px 0 0;
+  padding: 16px 16px calc(24px + var(--safe-bottom));
+  z-index: 200;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.bottom-sheet.show {
+  transform: translateY(0);
+}
+
+.bottom-sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--gray-300);
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+
+.bottom-sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--gray-200);
+}
+.bottom-sheet-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--granata);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bottom-sheet-close {
+  background: var(--gray-100);
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-700);
+}
+.bottom-sheet-close:hover {
+  background: var(--gray-200);
+}
+
+.bottom-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.bottom-sheet-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 12px;
+  background: var(--gray-50);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.bottom-sheet-item:hover {
+  background: rgba(122, 31, 46, 0.05);
+  border-color: var(--granata);
+  transform: translateY(-2px);
+}
+.bottom-sheet-item:active {
+  transform: translateY(0);
+}
+.bottom-sheet-item-icon {
+  font-size: 32px;
+}
+.bottom-sheet-item-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+/* Icona ingranaggio nella nav */
+.nav-item-gear {
+  position: relative;
+}
+.nav-item-gear.active {
+  color: var(--granata);
+}
+.nav-item-gear .nav-icon {
+  transition: transform 0.3s;
+}
+.nav-item-gear.open .nav-icon {
+  transform: rotate(90deg);
+}
+
+/* Dark mode overrides */
+:root[data-theme="dark"] .bottom-sheet {
+  background: var(--gray-100);
+}
+:root[data-theme="dark"] .bottom-sheet-item {
+  background: var(--gray-200);
+}
+:root[data-theme="dark"] .bottom-sheet-item:hover {
+  background: rgba(160, 50, 74, 0.15);
+  border-color: var(--granata-light);
+}
+:root[data-theme="dark"] .bottom-sheet-close {
+  background: var(--gray-200);
+  color: var(--gray-900);
+}
+:root[data-theme="dark"] .bottom-sheet-header {
+  border-bottom-color: var(--gray-300);
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 480px) {
   .view { padding: 12px; }
