@@ -33,12 +33,12 @@ const WhatsAppPage = {
               <input type="time" id="conv-meeting" class="form-control" required />
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-              <label>⚽ Orario Inizio</label>
+              <label> Orario Inizio</label>
               <input type="time" id="conv-kickoff" class="form-control" required />
             </div>
           </div>
           <div class="form-group">
-            <label> Divisa / Kit</label>
+            <label>🧦 Divisa / Kit</label>
             <input type="text" id="conv-kit" class="form-control" value="Maglia granata, pantaloncini neri, calzettoni granata" />
           </div>
           <div class="form-group">
@@ -61,7 +61,7 @@ const WhatsAppPage = {
             <button id="btn-deselect-all" class="btn btn-ghost" style="font-size: 12px; padding: 4px 8px;">❌ Nessuno</button>
           </div>
         </div>
-        <div id="conv-players-list" style="max-height: 200px; overflow-y: auto;">
+        <div id="conv-players-list" style="max-height: 250px; overflow-y: auto;">
           <div class="spinner"></div>
         </div>
       </div>
@@ -69,7 +69,7 @@ const WhatsAppPage = {
       <!-- Anteprima & Azioni -->
       <div class="card">
         <div class="card-title">📱 Anteprima Messaggio</div>
-        <textarea id="msg-preview" class="form-control" rows="8" readonly style="font-family: monospace; font-size: 13px; background: var(--gray-50);"></textarea>
+        <textarea id="msg-preview" class="form-control" rows="10" readonly style="font-family: monospace; font-size: 13px; background: var(--gray-50);"></textarea>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;">
           <button id="btn-save-conv" class="btn btn-secondary">💾 Salva Bozza</button>
           <button id="btn-copy-msg" class="btn btn-secondary">📋 Copia</button>
@@ -82,7 +82,7 @@ const WhatsAppPage = {
 
       <!-- Messaggi Rapidi -->
       <div class="card">
-        <div class="card-title">⚡ Messaggi Rapidi</div>
+        <div class="card-title"> Messaggi Rapidi</div>
         <div id="quick-msgs-list"></div>
       </div>
     `;
@@ -148,12 +148,12 @@ const WhatsAppPage = {
       
       if (error) throw error;
       
+      // ️ MODIFICA: NON selezionare automaticamente tutti i giocatori
       this.selectedPlayers.clear();
-      if (data) data.forEach(p => this.selectedPlayers.add(p.id));
       
       container.innerHTML = data?.map(p => `
-        <label style="display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--gray-200); cursor: pointer;">
-          <input type="checkbox" class="player-cb" value="${p.id}" checked style="width: 18px; height: 18px; accent-color: var(--granata);" />
+        <label style="display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-bottom: 1px solid var(--gray-200); cursor: pointer;">
+          <input type="checkbox" class="player-cb" value="${p.id}" style="width: 18px; height: 18px; accent-color: var(--granata);" />
           <span style="flex: 1; font-weight: 500;">${p.last_name} ${p.first_name}</span>
           <span style="font-size: 11px; color: var(--gray-500); text-transform: capitalize;">${p.role || 'N.D.'}</span>
         </label>
@@ -237,26 +237,27 @@ const WhatsAppPage = {
     const matchOption = document.getElementById('conv-match').selectedOptions[0];
     const matchText = matchId ? matchOption.textContent : '[Partita non selezionata]';
     
+    // ⚠️ MODIFICA: Lista convocati uno sotto l'altro
     const selectedNames = Array.from(document.querySelectorAll('.player-cb:checked'))
       .map(cb => cb.parentElement.querySelector('span').textContent)
-      .join(', ');
+      .join('\n');
 
-    const msg = `🏟️ *CONVOCAZIONE - ASD San Carlo Milano U9*
+    const msg = `️ *CONVOCAZIONE - ASD San Carlo Milano U9*
 
 ⚽ *Partita:* ${matchText}
 📅 *Data:* ${date ? new Date(date).toLocaleDateString('it-IT') : '[Da definire]'}
 ⏰ *Ritrovo:* ${meeting || '[--:--]'} | *Inizio:* ${kickoff || '[--:--]'}
 📍 *Luogo:* ${location || '[Da definire]'}
 
- *Divisa:* ${kit}
+🧦 *Divisa:* ${kit}
 🎒 *Da portare:* ${bring || '[Nessuna indicazione]'}
 
 👇 *CONVOCATI:*
-${selectedNames || 'Nessun giocatore selezionato'}
+${selectedNames || '[Nessun giocatore selezionato]'}
 
-${notes ? `📝 *Note:* ${notes}\n` : ''}
+${notes ? ` *Note:* ${notes}\n` : ''}
 ✅ *Si prega di confermare la presenza al più presto.*
-Grazie e buon calcio! 🤝⚽`;
+Grazie e buon calcio! ⚽`;
 
     document.getElementById('msg-preview').value = msg;
   },
@@ -312,7 +313,7 @@ Grazie e buon calcio! 🤝⚽`;
   copyMessage() {
     const msg = document.getElementById('msg-preview').value;
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(msg).then(() => toast('Messaggio copiato! 📋', 'success'));
+      navigator.clipboard.writeText(msg).then(() => toast('Messaggio copiato! ', 'success'));
     } else {
       const ta = document.createElement('textarea');
       ta.value = msg;
@@ -324,7 +325,6 @@ Grazie e buon calcio! 🤝⚽`;
     }
   },
 
-  // ===== FUNZIONE CHIAVE: Apre SOLO WhatsApp normale =====
   openWhatsApp() {
     const msg = document.getElementById('msg-preview').value;
     const encodedMsg = encodeURIComponent(msg);
@@ -334,24 +334,16 @@ Grazie e buon calcio! 🤝⚽`;
     
     try {
       if (isAndroid) {
-        // Intent Android ESPlicito: forza WhatsApp normale (package: com.whatsapp)
-        // WhatsApp Business ha package: com.whatsapp.w4b
         const intentUrl = `intent://send?text=${encodedMsg}#Intent;scheme=whatsapp;package=com.whatsapp;end`;
-        
-        // Prova ad aprire WhatsApp normale
         window.location.href = intentUrl;
         
-        // Fallback dopo 1.5 secondi se non si apre
         setTimeout(() => {
-          // Se siamo ancora qui, WhatsApp non è installato
           if (confirm('WhatsApp non sembra installato. Aprire WhatsApp Web?')) {
             window.open(`https://web.whatsapp.com/send?text=${encodedMsg}`, '_blank');
           }
         }, 1500);
         
       } else if (isIOS) {
-        // Su iOS non c'è distinzione tra normale e Business
-        // Usa lo scheme whatsapp://
         const waUrl = `whatsapp://send?text=${encodedMsg}`;
         window.location.href = waUrl;
         
@@ -362,19 +354,17 @@ Grazie e buon calcio! 🤝⚽`;
         }, 1500);
         
       } else {
-        // Desktop: usa WhatsApp Web
         window.open(`https://web.whatsapp.com/send?text=${encodedMsg}`, '_blank');
       }
     } catch (err) {
       console.error('Errore apertura WhatsApp:', err);
-      // Fallback universale
       window.open(`https://web.whatsapp.com/send?text=${encodedMsg}`, '_blank');
     }
   },
 
   quickMessages: [
     {
-      label: '🏃‍♂️ Promemoria Presenza',
+      label: '‍♂️ Promemoria Presenza',
       generator: () => {
         const date = document.getElementById('conv-date').value || '[data allenamento]';
         return `🔔 *PROMEMORIA*\nCiao a tutti! Ricordatevi di confermare la presenza per l'allenamento/partita del ${date}. Grazie! ⚽`;
@@ -385,7 +375,7 @@ Grazie e buon calcio! 🤝⚽`;
       generator: () => {
         const match = document.getElementById('conv-match').selectedOptions[0]?.textContent || '[partita]';
         const time = document.getElementById('conv-meeting').value || '[ora]';
-        return `⚽ *RICORDO PARTITA*\nVi aspetto per ${match}!\n⏰ Ritrovo: ${time}\nPortate tutto il materiale e tanta grinta! 💪🤝`;
+        return `⚽ *RICORDO PARTITA*\nVi aspetto per ${match}!\n Ritrovo: ${time}\nPortate tutto il materiale e tanta grinta! 💪`;
       }
     },
     {
@@ -395,9 +385,9 @@ Grazie e buon calcio! 🤝⚽`;
       }
     },
     {
-      label: '🩺 Scadenza Certificati',
+      label: ' Scadenza Certificati',
       generator: () => {
-        return ` *SCADENZA CERTIFICATI MEDICI*\nAi genitori ricordiamo di controllare la scadenza del certificato medico e di consegnare il rinnovo prima della data indicata. È obbligatorio per partecipare agli allenamenti e alle partite. Grazie per la collaborazione! 📋✅`;
+        return `🩺 *SCADENZA CERTIFICATI MEDICI*\nAi genitori ricordiamo di controllare la scadenza del certificato medico e di consegnare il rinnovo prima della data indicata. È obbligatorio per partecipare agli allenamenti e alle partite. Grazie per la collaborazione! 📋✅`;
       }
     }
   ],
