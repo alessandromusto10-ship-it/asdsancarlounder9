@@ -20,6 +20,26 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* ===== TEMA SCURO ===== */
+:root[data-theme="dark"] {
+  --granata: #A0324A;
+  --granata-dark: #7A1F2E;
+  --granata-light: #C04A62;
+  --white: #1a1a1a;
+  --gray-50: #0f0f0f;
+  --gray-100: #1a1a1a;
+  --gray-200: #2a2a2a;
+  --gray-300: #3a3a3a;
+  --gray-500: #a0a0a0;
+  --gray-700: #d0d0d0;
+  --gray-900: #f0f0f0;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --shadow: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
@@ -73,6 +93,26 @@ html, body {
 }
 .icon-btn:hover { background: rgba(255,255,255,0.25); }
 
+/* ===== THEME TOGGLE ===== */
+.theme-toggle {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: var(--white);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+.theme-toggle:hover {
+  background: rgba(255,255,255,0.25);
+  transform: rotate(180deg);
+}
+
 /* ===== VIEW ===== */
 .view {
   flex: 1;
@@ -92,7 +132,7 @@ html, body {
   background: var(--white);
   border-top: 1px solid var(--gray-200);
   display: flex;
-  justify-content: space-around;
+  flex-direction: column;
   padding: 8px 4px calc(8px + var(--safe-bottom));
   z-index: 99;
 }
@@ -151,6 +191,7 @@ html, body {
   border-radius: var(--radius);
   font-size: 15px;
   background: var(--white);
+  color: var(--gray-900);
   transition: border-color 0.2s;
 }
 .form-control:focus {
@@ -417,6 +458,7 @@ tr:nth-child(even) td { background: var(--gray-50); }
   padding: 6px 12px;
   border: 1px solid var(--gray-300);
   background: var(--white);
+  color: var(--gray-900);
   border-radius: 8px;
   font-size: 12px;
   cursor: pointer;
@@ -424,6 +466,57 @@ tr:nth-child(even) td { background: var(--gray-50); }
 .att-btn.active-presente { background: var(--success); color: var(--white); border-color: var(--success); }
 .att-btn.active-assente { background: var(--danger); color: var(--white); border-color: var(--danger); }
 .att-btn.active-giustificato { background: var(--warning); color: var(--white); border-color: var(--warning); }
+
+/* ===== DARK MODE OVERRIDES ===== */
+:root[data-theme="dark"] .calendar-day {
+  background: var(--gray-200);
+}
+:root[data-theme="dark"] .calendar-day:hover {
+  background: var(--gray-300);
+}
+:root[data-theme="dark"] .calendar-day.today {
+  background: var(--granata);
+  color: var(--white);
+}
+:root[data-theme="dark"] .badge-success {
+  background: rgba(34,197,94,0.2);
+}
+:root[data-theme="dark"] .badge-danger {
+  background: rgba(239,68,68,0.2);
+}
+:root[data-theme="dark"] .badge-warning {
+  background: rgba(245,158,11,0.2);
+}
+:root[data-theme="dark"] .badge-granata {
+  background: rgba(160,50,74,0.2);
+}
+:root[data-theme="dark"] .btn-secondary {
+  background: var(--gray-200);
+  color: var(--granata-light);
+  border-color: var(--granata-light);
+}
+:root[data-theme="dark"] .btn-secondary:hover {
+  background: var(--granata);
+  color: var(--white);
+}
+:root[data-theme="dark"] .btn-google {
+  background: var(--gray-200);
+  color: var(--gray-900);
+  border-color: var(--gray-300);
+}
+:root[data-theme="dark"] .btn-google:hover {
+  background: var(--gray-300);
+}
+:root[data-theme="dark"] .role-tab.active {
+  background: var(--gray-100);
+  color: var(--granata-light);
+}
+:root[data-theme="dark"] .install-banner {
+  border-left-color: var(--granata-light);
+}
+:root[data-theme="dark"] .nav-item.active {
+  color: var(--granata-light);
+}
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 480px) {
