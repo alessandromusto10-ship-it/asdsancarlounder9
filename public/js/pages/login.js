@@ -11,105 +11,136 @@ const LoginPage = {
           <!-- Tab ruolo -->
           <div class="role-tabs">
             <button class="role-tab active" data-role="mister">⚽ Mister</button>
-            <button class="role-tab" data-role="genitore">👨‍👩‍👦 Genitore</button>
+            <button class="role-tab" data-role="genitore">‍👩‍👦 Genitore</button>
           </div>
 
-          <!-- Form login -->
           <form id="login-form">
-            <div class="form-group">
-              <label>Email</label>
-              <input type="email" id="login-email" class="form-control" 
-                     placeholder="tua@email.it" required autocomplete="email" />
+            <!-- Campi email/password (solo per genitori) -->
+            <div id="email-section">
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="login-email" class="form-control" 
+                       placeholder="tua@email.it" required autocomplete="email" />
+              </div>
+              <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="login-password" class="form-control" 
+                       placeholder="••••••••" required autocomplete="current-password" />
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">
+                Accedi
+              </button>
             </div>
-            <div class="form-group">
-              <label>Password</label>
-              <input type="password" id="login-password" class="form-control" 
-                     placeholder="••••••••" required autocomplete="current-password" />
+
+            <!-- Sezione solo Google per mister -->
+            <div id="google-only-section" class="hidden">
+              <div style="text-align: center; padding: 20px 0;">
+                <p style="font-size: 14px; color: var(--gray-700); margin-bottom: 16px;">
+                   L'accesso per i Mister è riservato esclusivamente tramite Google.
+                </p>
+                <p style="font-size: 13px; color: var(--gray-500); margin-bottom: 20px;">
+                  Usa l'account Google autorizzato per accedere.
+                </p>
+              </div>
             </div>
-            <button type="submit" class="btn btn-primary btn-block">
-              Accedi
+
+            <div class="divider">oppure</div>
+
+            <button type="button" id="btn-google-login" class="btn btn-google btn-block">
+              <svg width="18" height="18" viewBox="0 0 48 48" style="margin-right: 8px;">
+                <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+                <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+                <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0124 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+                <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 01-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+              </svg>
+              Accedi con Google
             </button>
           </form>
 
-          <!-- Google sign-in (solo per mister) -->
-          <div id="google-section">
-            <div class="divider">oppure</div>
-            <button id="btn-google" class="btn btn-google btn-block">
-              <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-              Accedi con Google
-            </button>
-          </div>
-
-          <div class="text-center mt-4">
+          <div class="login-links">
             <a href="#/register" class="link">Registrati</a>
-            <span style="color: var(--gray-300); margin: 0 8px;">·</span>
+            <span class="separator">·</span>
             <a href="#/reset" class="link">Password dimenticata?</a>
           </div>
         </div>
       </div>
     `;
 
-    // Gestione tab
     let currentRole = 'mister';
     const tabs = view.querySelectorAll('.role-tab');
-    const googleSection = view.querySelector('#google-section');
-    
+    const emailSection = view.querySelector('#email-section');
+    const googleOnlySection = view.querySelector('#google-only-section');
+    const loginForm = view.querySelector('#login-form');
+
     const updateRoleUI = () => {
       tabs.forEach(t => t.classList.toggle('active', t.dataset.role === currentRole));
-      // Google visibile solo per mister
-      googleSection.style.display = currentRole === 'mister' ? 'block' : 'none';
+      
+      if (currentRole === 'mister') {
+        // Per i mister: nascondi email/password, mostra solo Google
+        emailSection.classList.add('hidden');
+        googleOnlySection.classList.remove('hidden');
+        // Nascondi i campi required per non bloccare il form
+        view.querySelector('#login-email').required = false;
+        view.querySelector('#login-password').required = false;
+      } else {
+        // Per i genitori: mostra email/password
+        emailSection.classList.remove('hidden');
+        googleOnlySection.classList.add('hidden');
+        view.querySelector('#login-email').required = true;
+        view.querySelector('#login-password').required = true;
+      }
     };
-    
+
     tabs.forEach(tab => {
       tab.addEventListener('click', () => {
         currentRole = tab.dataset.role;
         updateRoleUI();
       });
     });
-    updateRoleUI();
 
-    // Submit form
-    view.querySelector('#login-form').addEventListener('submit', async (e) => {
+    // Submit email/password (solo per genitori)
+    loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      // Se è selezionato "mister", ignora il submit del form email
+      if (currentRole === 'mister') return;
+      
       const email = view.querySelector('#login-email').value.trim();
       const password = view.querySelector('#login-password').value;
       const btn = e.target.querySelector('button[type="submit"]');
       
       btn.disabled = true;
-      btn.textContent = 'Accesso in corso...';
+      btn.textContent = 'Accesso...';
       
       try {
         await Auth.signInWithEmail(email, password);
-        
-        // Verifica ruolo
-        const { profile } = await Auth.getCurrentUser();
-        if (currentRole === 'mister' && profile?.role !== 'mister') {
-          await Auth.signOut();
-          throw new Error('Questo account non è un mister. Usa la tab "Genitore".');
-        }
-        if (currentRole === 'genitore' && profile?.role !== 'genitore') {
-          await Auth.signOut();
-          throw new Error('Questo account non è un genitore. Usa la tab "Mister".');
-        }
-        
-        toast('Benvenuto! 👋', 'success');
-        Router.navigate('/');
+        toast('Accesso effettuato! ✅', 'success');
       } catch (err) {
-        toast(err.message || 'Errore di accesso', 'error');
+        toast('Errore: ' + (err.message || 'Credenziali non valide'), 'error');
       } finally {
         btn.disabled = false;
         btn.textContent = 'Accedi';
       }
     });
 
-    // Google
-    view.querySelector('#btn-google').addEventListener('click', async () => {
+    // Login Google (per entrambi i ruoli)
+    view.querySelector('#btn-google-login').addEventListener('click', async () => {
+      const btn = view.querySelector('#btn-google-login');
+      btn.disabled = true;
+      btn.textContent = 'Accesso in corso...';
+      
       try {
         await Auth.signInWithGoogle();
+        // Il redirect a Google gestirà il resto
+        // Al ritorno, l'evento onAuthStateChange in app.js gestirà il profilo
       } catch (err) {
-        toast(err.message, 'error');
+        toast('Errore: ' + (err.message || 'Login Google fallito'), 'error');
+        btn.disabled = false;
+        btn.textContent = 'Accedi con Google';
       }
     });
+
+    updateRoleUI();
   }
 };
 
