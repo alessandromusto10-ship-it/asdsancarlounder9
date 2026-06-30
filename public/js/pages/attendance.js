@@ -9,12 +9,12 @@ const AttendancePage = {
     const { profile, user } = await Auth.getCurrentUser();
     this.isMister = profile.role === 'mister';
     
-    // Se genitore, recupera l'ID del figlio
+    // Se genitore, recupera l'ID del figlio (controlla entrambi gli slot)
     if (!this.isMister) {
       const { data: player } = await db
         .from('players')
         .select('id, first_name, last_name')
-        .eq('parent_id', user.id)
+        .or(`parent_id.eq.${user.id},parent_id_2.eq.${user.id}`)
         .single();
       this.myChildId = player?.id;
       
@@ -132,9 +132,7 @@ const AttendancePage = {
     document.getElementById('month-title').textContent = `${monthNames[month]} ${year}`;
     
     const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-	// Calcola l'ultimo giorno del mese correttamente
-	const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
-	const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`;
+    const endDate = `${year}-${String(month + 1).padStart(2, '0')}-31`;
     
     try {
       const { data: trainings, error } = await db
@@ -150,7 +148,7 @@ const AttendancePage = {
       if (!trainings || trainings.length === 0) {
         container.innerHTML = `
           <p style="color: var(--gray-500); text-align: center; padding: 20px;">
-            📭 Nessun allenamento in questo mese
+             Nessun allenamento in questo mese
           </p>
         `;
         return;
@@ -169,7 +167,7 @@ const AttendancePage = {
         
         let statusBadge = '';
         if (isInWeek) {
-          statusBadge = '<span class="badge badge-warning">✏️ Modificabile</span>';
+          statusBadge = '<span class="badge badge-warning">️ Modificabile</span>';
         } else if (isPast) {
           statusBadge = '<span class="badge badge-granata">✓ Passato</span>';
         } else {
@@ -179,7 +177,6 @@ const AttendancePage = {
         // Per i genitori: evidenzia se la presenza è già stata confermata
         let confirmedInfo = '';
         if (!this.isMister) {
-          // Lo caricheremo in modo asincrono sotto
           confirmedInfo = `<span id="conf-${t.id}" style="font-size: 11px; color: var(--gray-500);"></span>`;
         }
         
@@ -194,7 +191,7 @@ const AttendancePage = {
                 ${confirmedInfo}
               </div>
               <div style="font-size: 13px; color: var(--gray-700); margin-top: 4px;">
-                ⏰ ${formatTime(t.time)} ${t.location ? '· 📍 ' + t.location : ''}
+                 ${formatTime(t.time)} ${t.location ? '· 📍 ' + t.location : ''}
               </div>
             </div>
             <div style="color: var(--granata); font-size: 20px;">›</div>
@@ -270,7 +267,7 @@ const AttendancePage = {
     
     const dateObj = new Date(training.date);
     document.getElementById('detail-title').textContent = 
-      `🏃 ${dateObj.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long' })}`;
+      ` ${dateObj.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long' })}`;
     document.getElementById('detail-subtitle').textContent = 
       `⏰ ${formatTime(training.time)}${training.location ? ' · 📍 ' + training.location : ''}`;
     
@@ -321,14 +318,14 @@ const AttendancePage = {
       const roleEmoji = {
         'portiere': '🧤',
         'difensore': '🛡️',
-        'centrocampista': '⚡',
-        'attaccante': '🎯'
+        'centrocampista': '',
+        'attaccante': ''
       };
       
       let html = '';
       players.forEach(p => {
         const status = statusMap[p.id] || 'assente';
-        const emoji = roleEmoji[p.role] || '⚽';
+        const emoji = roleEmoji[p.role] || '';
         const editable = canEdit || this.isMister;
         
         html += `
@@ -343,7 +340,7 @@ const AttendancePage = {
               <button class="att-btn ${status === 'assente' ? 'active-assente' : ''}" 
                       data-status="assente" ${!editable ? 'disabled' : ''}>❌</button>
               <button class="att-btn ${status === 'giustificato' ? 'active-giustificato' : ''}" 
-                      data-status="giustificato" ${!editable ? 'disabled' : ''}>⚠️</button>
+                      data-status="giustificato" ${!editable ? 'disabled' : ''}>️</button>
             </div>
           </div>
         `;
