@@ -44,6 +44,8 @@
 
 html, body {
   height: 100%;
+  width: 100%;
+  overflow-x: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--gray-50);
   color: var(--gray-900);
@@ -53,10 +55,12 @@ html, body {
 
 #app {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   padding-top: var(--safe-top);
   padding-bottom: var(--safe-bottom);
+  width: 100%;
 }
 
 /* ===== HEADER ===== */
@@ -113,7 +117,7 @@ html, body {
   transform: rotate(180deg);
 }
 
-/* ===== VIEW (padding aumentato per non essere coperta dalla navbar) ===== */
+/* ===== VIEW ===== */
 .view {
   flex: 1;
   padding: 16px;
@@ -123,7 +127,7 @@ html, body {
   margin: 0 auto;
 }
 
-/* ===== BOTTOM NAV (6 voci, icone più grandi) ===== */
+/* ===== BOTTOM NAV ===== */
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -243,24 +247,30 @@ select.form-control {
   gap: 8px;
 }
 
-/* ===== LOGIN ===== */
+/* ===== LOGIN - FIX COMPLETO ===== */
 .login-container {
   min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 24px 16px;
   background: linear-gradient(135deg, var(--granata), var(--granata-dark));
+  overflow-y: auto;
 }
+
 .login-box {
   background: var(--white);
   border-radius: 20px;
   padding: 32px 24px;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   box-shadow: var(--shadow-lg);
+  margin: auto 0;
 }
+
 .login-logo {
   width: 80px;
   height: 80px;
@@ -328,6 +338,24 @@ select.form-control {
   width: 100%;
 }
 .btn-google:hover { background: var(--gray-50); }
+
+/* Link login - FIX ALLINEAMENTO */
+.login-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+  flex-wrap: nowrap;
+}
+.login-links .link {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.login-links .separator {
+  color: var(--gray-300);
+  font-size: 12px;
+}
 .link { color: var(--granata); text-decoration: none; font-weight: 500; }
 .link:hover { text-decoration: underline; }
 
@@ -426,10 +454,10 @@ tr:nth-child(even) td { background: var(--gray-50); }
 .toast.success { background: var(--success); }
 .toast.error { background: var(--danger); }
 
-/* ===== INSTALL BANNER ===== */
+/* ===== INSTALL BANNER - FIX POSIZIONE ===== */
 .install-banner {
   position: fixed;
-  bottom: calc(100px + var(--safe-bottom));
+  bottom: calc(var(--safe-bottom) + 8px);
   left: 16px;
   right: 16px;
   background: var(--white);
@@ -441,6 +469,7 @@ tr:nth-child(even) td { background: var(--gray-50); }
   gap: 8px;
   z-index: 98;
   border-left: 4px solid var(--granata);
+  margin-bottom: 8px;
 }
 .install-banner span { flex: 1; font-size: 13px; }
 
@@ -493,7 +522,7 @@ tr:nth-child(even) td { background: var(--gray-50); }
 .att-btn.active-assente { background: var(--danger); color: var(--white); border-color: var(--danger); }
 .att-btn.active-giustificato { background: var(--warning); color: var(--white); border-color: var(--warning); }
 
-/* ===== BOTTOM SHEET VERTICALE (Menu Gestione) ===== */
+/* ===== BOTTOM SHEET VERTICALE ===== */
 .bottom-sheet-overlay {
   position: fixed;
   inset: 0;
@@ -570,7 +599,6 @@ tr:nth-child(even) td { background: var(--gray-50); }
   background: var(--gray-200);
 }
 
-/* Layout verticale */
 .bottom-sheet-content {
   display: flex;
   flex-direction: column;
@@ -610,7 +638,6 @@ tr:nth-child(even) td { background: var(--gray-50); }
   flex: 1;
 }
 
-/* Icona ingranaggio */
 .nav-item-gear {
   position: relative;
 }
@@ -701,7 +728,6 @@ tr:nth-child(even) td { background: var(--gray-50); }
   .calendar-day { font-size: 11px; }
   th, td { padding: 8px 6px; font-size: 12px; }
   
-  /* Nav con 6 voci su mobile */
   .bottom-nav { 
     padding: 6px 2px calc(10px + var(--safe-bottom)); 
   }
@@ -714,7 +740,6 @@ tr:nth-child(even) td { background: var(--gray-50); }
     font-size: 22px; 
   }
   
-  /* Bottom sheet verticale su mobile */
   .bottom-sheet-item {
     padding: 12px 14px;
   }
@@ -725,9 +750,19 @@ tr:nth-child(even) td { background: var(--gray-50); }
   .bottom-sheet-item-label { 
     font-size: 14px; 
   }
+  
+  /* Login box più compatta su mobile */
+  .login-box {
+    padding: 24px 20px;
+  }
+  .login-title {
+    font-size: 20px;
+  }
+  .login-links .link {
+    font-size: 12px;
+  }
 }
 
-/* Schermi molto piccoli (iPhone SE, etc.) */
 @media (max-width: 360px) {
   .nav-item {
     font-size: 9px;
@@ -745,5 +780,29 @@ tr:nth-child(even) td { background: var(--gray-50); }
   }
   .bottom-sheet-item-label {
     font-size: 13px;
+  }
+  .login-links .link {
+    font-size: 11px;
+  }
+}
+
+/* ===== DESKTOP - Login box più larga ===== */
+@media (min-width: 768px) {
+  .login-box {
+    max-width: 480px;
+    padding: 40px 32px;
+  }
+  .login-title {
+    font-size: 26px;
+  }
+  .login-logo {
+    width: 100px;
+    height: 100px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .login-box {
+    max-width: 520px;
   }
 }
