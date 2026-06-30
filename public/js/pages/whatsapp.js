@@ -306,7 +306,7 @@ const WhatsAppPage = {
     
     // Convocati uno sotto l'altro
     const selectedNames = Array.from(document.querySelectorAll('.player-cb:checked'))
-      .map(cb => cb.parentElement.querySelector('span:nth-child(3)').textContent)
+      .map(cb => cb.parentElement.querySelector('span:nth-child(2)').textContent)
       .join('\n');
 
     // 🎒 Attrezzatura uno sotto l'altro con emoji
