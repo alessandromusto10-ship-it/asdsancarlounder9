@@ -132,7 +132,9 @@ const AttendancePage = {
     document.getElementById('month-title').textContent = `${monthNames[month]} ${year}`;
     
     const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-    const endDate = `${year}-${String(month + 1).padStart(2, '0')}-31`;
+	// Calcola l'ultimo giorno del mese correttamente
+	const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+	const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`;
     
     try {
       const { data: trainings, error } = await db
