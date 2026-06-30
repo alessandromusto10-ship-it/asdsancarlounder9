@@ -6,12 +6,12 @@ const WhatsAppPage = {
   // Lista attrezzatura con emoji
   EQUIPMENT_LIST: [
     { id: 'borraccia', label: 'Borraccia', emoji: '💧' },
-    { id: 'pantaloncini', label: 'Pantaloncini ERREA', emoji: '' },
-    { id: 'parastinchi', label: 'Parastinchi', emoji: '🦵' },
+    { id: 'pantaloncini', label: 'Pantaloncini ERREA', emoji: '🩳' },
+    { id: 'parastinchi', label: 'Parastinchi', emoji: '🛡️' },
     { id: 'scarpe', label: 'Scarpe da calcio', emoji: '👟' },
     { id: 'maglia', label: 'Maglia con numero', emoji: '👕' },
     { id: 'calzettoni', label: 'Calzettoni', emoji: '🧦' },
-    { id: 'tuta', label: 'Tuta di rappresentanza', emoji: '🏃♂️' },
+    { id: 'tuta', label: 'Tuta di rappresentanza', emoji: '🧥' },
     { id: 'giaccone', label: 'Giaccone', emoji: '🧥' },
     { id: 'kway', label: 'Kway', emoji: '🌧️' }
   ],
