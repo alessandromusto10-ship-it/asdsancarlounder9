@@ -99,9 +99,10 @@ function renderNav(role) {
   if (!nav) return;
 
   if (role === 'mister') {
-    // Elementi dentro il menu Gestione (incluso Presenze)
+    // Elementi dentro il menu Gestione (incluso Presenze e Statistiche)
     const managementItems = [
       { path: '/attendance', icon: '✅', label: 'Presenze' },
+      { path: '/stats', icon: '📈', label: 'Statistiche' },
       { path: '/roster', icon: '👥', label: 'Rosa' },
       { path: '/championship', icon: '🏟️', label: 'Campionato' },
       { path: '/trainings', icon: '🏃', label: 'Allenamenti' },
@@ -126,7 +127,7 @@ function renderNav(role) {
       });
     }
 
-    // Nav principale: Home, Calendario, Partite, Classifica, Gestione, Statistiche, WhatsApp
+    // Nav principale: 6 voci (più facili da cliccare)
     nav.innerHTML = `
       <button class="nav-item" data-path="/" onclick="Router.navigate('/')">
         <span class="nav-icon">🏠</span><span>Home</span>
@@ -143,9 +144,6 @@ function renderNav(role) {
       <button class="nav-item nav-item-gear" id="btn-gear">
         <span class="nav-icon">⚙️</span><span>Gestione</span>
       </button>
-      <button class="nav-item" data-path="/stats" onclick="Router.navigate('/stats')">
-        <span class="nav-icon">📈</span><span>Statistiche</span>
-      </button>
       <button class="nav-item" data-path="/whatsapp" onclick="Router.navigate('/whatsapp')">
         <span class="nav-icon">📱</span><span>WhatsApp</span>
       </button>
@@ -154,13 +152,13 @@ function renderNav(role) {
     $('#btn-gear')?.addEventListener('click', openBottomSheet);
 
   } else {
-    // Genitori: mantengo Presenze nella nav principale
+    // Genitori: 6 voci
     nav.innerHTML = `
       <button class="nav-item" data-path="/" onclick="Router.navigate('/')">
         <span class="nav-icon">🏠</span><span>Home</span>
       </button>
       <button class="nav-item" data-path="/calendar" onclick="Router.navigate('/calendar')">
-        <span class="nav-icon">📅</span><span>Calendario</span>
+        <span class="nav-icon"></span><span>Calendario</span>
       </button>
       <button class="nav-item" data-path="/matches" onclick="Router.navigate('/matches')">
         <span class="nav-icon">⚽</span><span>Partite</span>
@@ -170,9 +168,6 @@ function renderNav(role) {
       </button>
       <button class="nav-item" data-path="/attendance" onclick="Router.navigate('/attendance')">
         <span class="nav-icon">✅</span><span>Presenze</span>
-      </button>
-      <button class="nav-item" data-path="/stats" onclick="Router.navigate('/stats')">
-        <span class="nav-icon">📈</span><span>Statistiche</span>
       </button>
       <button class="nav-item" data-path="/whatsapp" onclick="Router.navigate('/whatsapp')">
         <span class="nav-icon">📱</span><span>WhatsApp</span>
