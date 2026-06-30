@@ -99,23 +99,23 @@ function renderNav(role) {
   if (!nav) return;
 
   if (role === 'mister') {
-    // Elementi dentro il menu Gestione (incluso Presenze e Statistiche)
+    // Elementi dentro il menu Gestione (ORDINE RICHIESTO)
     const managementItems = [
       { path: '/attendance', icon: '✅', label: 'Presenze' },
-      { path: '/stats', icon: '📈', label: 'Statistiche' },
       { path: '/roster', icon: '👥', label: 'Rosa' },
-      { path: '/championship', icon: '🏟️', label: 'Campionato' },
       { path: '/trainings', icon: '🏃', label: 'Allenamenti' },
-      { path: '/results', icon: '📊', label: 'Risultati' }
+      { path: '/results', icon: '📊', label: 'Risultati' },
+      { path: '/championship', icon: '🏟️', label: 'Campionato' },
+      { path: '/stats', icon: '📈', label: 'Statistiche' }
     ];
 
-    // Renderizza contenuto bottom sheet
+    // Renderizza contenuto bottom sheet (layout verticale)
     const sheetContent = $('#bottom-sheet-content');
     if (sheetContent) {
       sheetContent.innerHTML = managementItems.map(item => `
         <div class="bottom-sheet-item" data-path="${item.path}">
-          <div class="bottom-sheet-item-icon">${item.icon}</div>
-          <div class="bottom-sheet-item-label">${item.label}</div>
+          <span class="bottom-sheet-item-icon">${item.icon}</span>
+          <span class="bottom-sheet-item-label">${item.label}</span>
         </div>
       `).join('');
       
@@ -127,7 +127,7 @@ function renderNav(role) {
       });
     }
 
-    // Nav principale: 6 voci (più facili da cliccare)
+    // Nav principale: 6 voci
     nav.innerHTML = `
       <button class="nav-item" data-path="/" onclick="Router.navigate('/')">
         <span class="nav-icon">🏠</span><span>Home</span>
@@ -158,7 +158,7 @@ function renderNav(role) {
         <span class="nav-icon">🏠</span><span>Home</span>
       </button>
       <button class="nav-item" data-path="/calendar" onclick="Router.navigate('/calendar')">
-        <span class="nav-icon"></span><span>Calendario</span>
+        <span class="nav-icon">📅</span><span>Calendario</span>
       </button>
       <button class="nav-item" data-path="/matches" onclick="Router.navigate('/matches')">
         <span class="nav-icon">⚽</span><span>Partite</span>
