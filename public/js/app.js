@@ -59,6 +59,7 @@ function renderNav(role) {
   const mister = [
     { path: '/roster', icon: '👥', label: 'Rosa' },
     { path: '/championship', icon: '🏆', label: 'Campionato' },
+	{ path: '/trainings', icon: '🏃', label: 'Allenam.' },
     { path: '/stats', icon: '📊', label: 'Statistiche' },
     { path: '/whatsapp', icon: '📱', label: 'WhatsApp' }
   ];
@@ -75,6 +76,60 @@ function renderNav(role) {
 Router.register('/login', () => LoginPage.render());
 Router.register('/register', () => RegisterPage.render());
 Router.register('/reset', () => ResetPage.render());
+Router.register('/', () => HomePage.render());
+Router.register('/calendar', () => CalendarPage.render());
+Router.register('/matches', () => MatchesPage.render());
+Router.register('/trainings', () => TrainingsPage.render());
+
+// Placeholder per le prossime pagine
+Router.register('/standings', async () => {
+  document.getElementById('view').innerHTML = `
+    <div class="card text-center" style="margin-top:20px;">
+      <h2>🥇 Classifica</h2>
+      <p style="margin:12px 0; color: var(--gray-500);">Prossimamente...</p>
+    </div>
+  `;
+});
+Router.register('/attendance', async () => {
+  document.getElementById('view').innerHTML = `
+    <div class="card text-center" style="margin-top:20px;">
+      <h2>✅ Presenze</h2>
+      <p style="margin:12px 0; color: var(--gray-500);">Prossimamente...</p>
+    </div>
+  `;
+});
+Router.register('/roster', async () => {
+  document.getElementById('view').innerHTML = `
+    <div class="card text-center" style="margin-top:20px;">
+      <h2>👥 Rosa</h2>
+      <p style="margin:12px 0; color: var(--gray-500);">Prossimamente...</p>
+    </div>
+  `;
+});
+Router.register('/championship', async () => {
+  document.getElementById('view').innerHTML = `
+    <div class="card text-center" style="margin-top:20px;">
+      <h2>🏆 Campionato</h2>
+      <p style="margin:12px 0; color: var(--gray-500);">Prossimamente...</p>
+    </div>
+  `;
+});
+Router.register('/stats', async () => {
+  document.getElementById('view').innerHTML = `
+    <div class="card text-center" style="margin-top:20px;">
+      <h2>📊 Statistiche</h2>
+      <p style="margin:12px 0; color: var(--gray-500);">Prossimamente...</p>
+    </div>
+  `;
+});
+Router.register('/whatsapp', async () => {
+  document.getElementById('view').innerHTML = `
+    <div class="card text-center" style="margin-top:20px;">
+      <h2>📱 WhatsApp</h2>
+      <p style="margin:12px 0; color: var(--gray-500);">Prossimamente...</p>
+    </div>
+  `;
+});
 
 // Placeholder per le altre pagine (le creeremo nei prossimi step)
 Router.register('/', async () => {
