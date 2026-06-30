@@ -518,7 +518,7 @@ tr:nth-child(even) td { background: var(--gray-50); }
   color: var(--granata-light);
 }
 
-/* ===== BOTTOM SHEET (Menu Gestione) ===== */
+/* ===== BOTTOM SHEET (Menu Gestione) - ORIZZONTALE ===== */
 .bottom-sheet-overlay {
   position: fixed;
   inset: 0;
@@ -545,8 +545,8 @@ tr:nth-child(even) td { background: var(--gray-50); }
   transform: translateY(100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
-  max-height: 70vh;
-  overflow-y: auto;
+  max-height: 50vh;
+  overflow: hidden;
 }
 .bottom-sheet.show {
   transform: translateY(0);
@@ -593,10 +593,23 @@ tr:nth-child(even) td { background: var(--gray-50); }
   background: var(--gray-200);
 }
 
-.bottom-sheet-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+/* Layout orizzontale con scroll */
+.bottom-sheet-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.bottom-sheet-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.bottom-sheet-row {
+  display: flex;
   gap: 12px;
+  padding: 4px 0;
+  min-width: max-content;
 }
 
 .bottom-sheet-item {
@@ -605,13 +618,15 @@ tr:nth-child(even) td { background: var(--gray-50); }
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 20px 12px;
+  padding: 16px 20px;
   background: var(--gray-50);
   border: 2px solid transparent;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
   text-align: center;
+  min-width: 100px;
+  flex-shrink: 0;
 }
 .bottom-sheet-item:hover {
   background: rgba(122, 31, 46, 0.05);
@@ -622,12 +637,13 @@ tr:nth-child(even) td { background: var(--gray-50); }
   transform: translateY(0);
 }
 .bottom-sheet-item-icon {
-  font-size: 32px;
+  font-size: 28px;
 }
 .bottom-sheet-item-label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--gray-900);
+  white-space: nowrap;
 }
 
 /* Icona ingranaggio nella nav */
