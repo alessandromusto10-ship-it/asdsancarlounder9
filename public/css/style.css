@@ -46,11 +46,21 @@ html, body {
   height: 100%;
   width: 100%;
   overflow-x: hidden;
+  overflow-y: auto;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--granata);
   color: var(--gray-900);
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
+}
+
+/* Rimuovi scrollbar laterale su browser */
+html::-webkit-scrollbar {
+  display: none;
+}
+html {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 #app {
@@ -61,6 +71,7 @@ html, body {
   padding-top: var(--safe-top);
   padding-bottom: var(--safe-bottom);
   width: 100%;
+  overflow-x: hidden;
 }
 
 /* ===== HEADER ===== */
@@ -125,6 +136,7 @@ html, body {
   max-width: 720px;
   width: 100%;
   margin: 0 auto;
+  overflow-x: hidden;
 }
 
 /* ===== BOTTOM NAV ===== */
@@ -257,8 +269,10 @@ select.form-control {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: linear-gradient(135deg, var(--granata), var(--granata-dark));
+  /* Gradiente sottile quasi impercettibile */
+  background: linear-gradient(180deg, #7A1F2E 0%, #6B1A27 100%);
   overflow: hidden;
+  position: relative;
 }
 
 .login-box {
@@ -267,10 +281,11 @@ select.form-control {
   padding: 32px 24px;
   width: 100%;
   max-width: 420px;
-  max-height: 95vh;
-  max-height: 95dvh;
+  max-height: 90vh;
+  max-height: 90dvh;
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
+  margin-top: 60px; /* Spazio per il banner install in alto */
 }
 
 .login-logo {
@@ -456,10 +471,10 @@ tr:nth-child(even) td { background: var(--gray-50); }
 .toast.success { background: var(--success); }
 .toast.error { background: var(--danger); }
 
-/* ===== INSTALL BANNER - FIX POSIZIONE ===== */
+/* ===== INSTALL BANNER - SPOSTATO IN ALTO ===== */
 .install-banner {
   position: fixed;
-  bottom: 16px;
+  top: 16px;
   left: 16px;
   right: 16px;
   background: var(--white);
@@ -469,8 +484,10 @@ tr:nth-child(even) td { background: var(--gray-50); }
   display: flex;
   align-items: center;
   gap: 8px;
-  z-index: 98;
+  z-index: 150;
   border-left: 4px solid var(--granata);
+  max-width: 420px;
+  margin: 0 auto;
 }
 .install-banner span { flex: 1; font-size: 13px; }
 
@@ -755,11 +772,23 @@ tr:nth-child(even) td { background: var(--gray-50); }
   /* Login box più compatta su mobile */
   .login-box {
     padding: 24px 20px;
+    margin-top: 70px; /* Più spazio per il banner in alto */
   }
   .login-title {
     font-size: 20px;
   }
   .login-links .link {
+    font-size: 12px;
+  }
+  
+  /* Banner install più piccolo su mobile */
+  .install-banner {
+    padding: 10px;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+  }
+  .install-banner span {
     font-size: 12px;
   }
 }
@@ -784,6 +813,10 @@ tr:nth-child(even) td { background: var(--gray-50); }
   }
   .login-links .link {
     font-size: 11px;
+  }
+  .login-box {
+    margin-top: 75px;
+    padding: 20px 16px;
   }
 }
 
