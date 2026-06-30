@@ -5,13 +5,13 @@ const RegisterPage = {
       <div class="login-container">
         <div class="login-box">
           <img src="/icons/logo.svg" alt="Logo" class="login-logo" />
-          <h1 class="login-title">📝 Registrazione</h1>
+          <h1 class="login-title"> Registrazione</h1>
           <p class="login-subtitle">Crea il tuo account</p>
 
           <!-- Tab ruolo -->
           <div class="role-tabs">
-            <button class="role-tab active" data-role="mister">⚽ Mister</button>
-            <button class="role-tab" data-role="genitore">👨‍👩‍👦 Genitore</button>
+            <button class="role-tab active" data-role="mister"> Mister</button>
+            <button class="role-tab" data-role="genitore">👨👩‍👦 Genitore</button>
           </div>
 
           <form id="register-form">
@@ -86,11 +86,13 @@ const RegisterPage = {
       playerSelect.innerHTML = '<option value="">-- Seleziona --</option>';
       
       try {
+        // ✅ MODIFICA: Seleziono solo id, first_name, last_name (niente role)
         const { data, error } = await db
           .from('players')
-          .select('id, first_name, last_name, birth_date, role')
+          .select('id, first_name, last_name')
           .is('parent_id', null)
-          .order('last_name');
+          .order('last_name')
+          .order('first_name');
         
         if (error) throw error;
         
@@ -100,8 +102,8 @@ const RegisterPage = {
           data.forEach(p => {
             const opt = document.createElement('option');
             opt.value = p.id;
-            opt.textContent = `${p.last_name} ${p.first_name}` + 
-                             (p.role ? ` (${p.role})` : '');
+            // ✅ MODIFICA: Mostro solo Cognome e Nome, senza ruolo
+            opt.textContent = `${p.last_name} ${p.first_name}`;
             playerSelect.appendChild(opt);
           });
         }
