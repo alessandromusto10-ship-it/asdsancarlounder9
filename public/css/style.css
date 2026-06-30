@@ -123,7 +123,7 @@ html, body {
   margin: 0 auto;
 }
 
-/* ===== BOTTOM NAV ===== */
+/* ===== BOTTOM NAV (compatta per 7 voci) ===== */
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -133,14 +133,14 @@ html, body {
   border-top: 1px solid var(--gray-200);
   display: flex;
   justify-content: space-around;
-  padding: 8px 4px calc(8px + var(--safe-bottom));
+  padding: 6px 2px calc(6px + var(--safe-bottom));
   z-index: 99;
 }
 .nav-item {
   flex: 1;
   background: none;
   border: none;
-  padding: 6px 4px;
+  padding: 4px 2px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -149,8 +149,10 @@ html, body {
   font-size: 10px;
   cursor: pointer;
   transition: color 0.2s;
+  white-space: nowrap;
+  min-width: 0;
 }
-.nav-item .nav-icon { font-size: 20px; }
+.nav-item .nav-icon { font-size: 18px; }
 .nav-item.active { color: var(--granata); font-weight: 600; }
 
 /* ===== BUTTONS ===== */
@@ -199,7 +201,13 @@ html, body {
   border-color: var(--granata);
   box-shadow: 0 0 0 3px rgba(122,31,46,0.1);
 }
-select.form-control { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3e%3cpath fill='%2371717a' d='M6 9L1 4h10z'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+select.form-control { 
+  appearance: none; 
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3e%3cpath fill='%2371717a' d='M6 9L1 4h10z'/%3e%3c/svg%3e"); 
+  background-repeat: no-repeat; 
+  background-position: right 12px center; 
+  padding-right: 36px; 
+}
 
 /* ===== CARD ===== */
 .card {
@@ -607,24 +615,7 @@ tr:nth-child(even) td { background: var(--gray-50); }
   transform: rotate(90deg);
 }
 
-/* Dark mode overrides */
-:root[data-theme="dark"] .bottom-sheet {
-  background: var(--gray-100);
-}
-:root[data-theme="dark"] .bottom-sheet-item {
-  background: var(--gray-200);
-}
-:root[data-theme="dark"] .bottom-sheet-item:hover {
-  background: rgba(160, 50, 74, 0.15);
-  border-color: var(--granata-light);
-}
-:root[data-theme="dark"] .bottom-sheet-close {
-  background: var(--gray-200);
-  color: var(--gray-900);
-}
-:root[data-theme="dark"] .bottom-sheet-header {
-  border-bottom-color: var(--gray-300);
-}
+/* ===== DARK MODE OVERRIDES ===== */
 :root[data-theme="dark"] .calendar-day {
   background: var(--gray-200);
 }
@@ -674,20 +665,72 @@ tr:nth-child(even) td { background: var(--gray-50); }
 :root[data-theme="dark"] .nav-item.active {
   color: var(--granata-light);
 }
+:root[data-theme="dark"] .bottom-sheet {
+  background: var(--gray-100);
+}
+:root[data-theme="dark"] .bottom-sheet-item {
+  background: var(--gray-200);
+}
+:root[data-theme="dark"] .bottom-sheet-item:hover {
+  background: rgba(160, 50, 74, 0.15);
+  border-color: var(--granata-light);
+}
+:root[data-theme="dark"] .bottom-sheet-close {
+  background: var(--gray-200);
+  color: var(--gray-900);
+}
+:root[data-theme="dark"] .bottom-sheet-header {
+  border-bottom-color: var(--gray-300);
+}
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 480px) {
   .view { padding: 12px; }
   .calendar-day { font-size: 11px; }
   th, td { padding: 8px 6px; font-size: 12px; }
+  
+  /* Nav compatta per 7 voci su mobile */
+  .bottom-nav { 
+    padding: 4px 0 calc(4px + var(--safe-bottom)); 
+  }
+  .nav-item { 
+    font-size: 9px; 
+    padding: 2px 1px; 
+    gap: 1px;
+  }
+  .nav-item .nav-icon { 
+    font-size: 16px; 
+  }
+  
+  /* Bottom sheet compatta su mobile */
   .bottom-sheet-item {
-    min-width: 90px;
-    padding: 14px 16px;
+    min-width: 85px;
+    padding: 12px 14px;
+  }
+  .bottom-sheet-item-icon { 
+    font-size: 24px; 
+  }
+  .bottom-sheet-item-label { 
+    font-size: 11px; 
+  }
+}
+
+/* Schermi molto piccoli (iPhone SE, etc.) */
+@media (max-width: 360px) {
+  .nav-item {
+    font-size: 8px;
+  }
+  .nav-item .nav-icon {
+    font-size: 15px;
+  }
+  .bottom-sheet-item {
+    min-width: 75px;
+    padding: 10px 12px;
   }
   .bottom-sheet-item-icon {
-    font-size: 24px;
+    font-size: 22px;
   }
   .bottom-sheet-item-label {
-    font-size: 11px;
+    font-size: 10px;
   }
 }
