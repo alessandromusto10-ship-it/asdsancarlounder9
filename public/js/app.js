@@ -20,6 +20,44 @@ function formatTime(t) {
 function $(sel) { return document.querySelector(sel); }
 function $$(sel) { return document.querySelectorAll(sel); }
 
+// ===== GESTIONE TEMA =====
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme');
+  
+  if (savedTheme) {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  } else {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const defaultTheme = prefersDark ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', defaultTheme);
+    localStorage.setItem('theme', defaultTheme);
+  }
+  
+  updateThemeIcon();
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+  
+  updateThemeIcon();
+  toast(`Tema ${newTheme === 'dark' ? 'scuro 🌙' : 'chiaro ☀️'} attivato`, 'success');
+}
+
+function updateThemeIcon() {
+  const theme = document.documentElement.getAttribute('data-theme');
+  const btn = document.getElementById('btn-theme');
+  if (btn) {
+    btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+}
+
+// Inizializza tema subito
+initTheme();
+
 // ===== INSTALL PWA =====
 let deferredPrompt = null;
 
@@ -48,12 +86,14 @@ $('#btn-logout')?.addEventListener('click', async () => {
   Router.navigate('/login');
 });
 
+// ===== TOGGLE TEMA =====
+$('#btn-theme')?.addEventListener('click', toggleTheme);
+
 // ===== NAV DINAMICA =====
 function renderNav(role) {
   const nav = $('#bottom-nav');
   if (!nav) return;
   
-  // Voci comuni a tutti
   const common = [
     { path: '/', icon: '🏠', label: 'Home' },
     { path: '/calendar', icon: '📅', label: 'Calendario' },
@@ -62,7 +102,6 @@ function renderNav(role) {
     { path: '/attendance', icon: '✅', label: 'Presenze' }
   ];
   
-  // Voci extra solo per i mister
   const misterExtra = [
     { path: '/roster', icon: '👥', label: 'Rosa' },
     { path: '/championship', icon: '🏟️', label: 'Campionato' },
@@ -74,7 +113,6 @@ function renderNav(role) {
   
   const items = role === 'mister' ? [...common, ...misterExtra] : common;
   
-  // Se mister, nav a due righe per non affollare
   if (role === 'mister') {
     nav.innerHTML = `
       <div style="display: flex; justify-content: space-around; width: 100%; padding-bottom: 4px; border-bottom: 1px solid var(--gray-200);">
@@ -111,7 +149,7 @@ Router.register('/login', () => LoginPage.render());
 Router.register('/register', () => RegisterPage.render());
 Router.register('/reset', () => ResetPage.render());
 
-// --- Pagine comuni (genitori + mister) ---
+// --- Pagine comuni ---
 Router.register('/', () => HomePage.render());
 Router.register('/calendar', () => CalendarPage.render());
 Router.register('/matches', () => MatchesPage.render());
@@ -125,9 +163,6 @@ Router.register('/roster', () => RosterPage.render());
 Router.register('/championship', () => ChampionshipPage.render());
 Router.register('/stats', () => StatsPage.render());
 Router.register('/whatsapp', () => WhatsAppPage.render());
-
-// Placeholder per le prossime pagine (le implementeremo nei prossimi step)
-
 
 // ===== INIT =====
 async function init() {
@@ -149,10 +184,7 @@ async function init() {
   Router.resolve();
 }
 
-// Riascolto i cambiamenti di auth (login/logout)
 db.auth.onAuthStateChange(() => init());
-
-// Avvio iniziale
 init();
 
 // Esponi utility globali
@@ -161,3 +193,5 @@ window.formatDate = formatDate;
 window.formatTime = formatTime;
 window.$ = $;
 window.$$ = $$;
+window.toggleTheme = toggleTheme;
+window.initTheme = initTheme;
