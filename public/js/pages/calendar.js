@@ -17,11 +17,11 @@ const CalendarPage = {
 
       <div class="calendar-grid" id="calendar-grid"></div>
 
+      <!-- Eventi della settimana -->
       <div class="card mt-4">
-        <div class="card-title">📌 Legenda</div>
-        <div style="display: flex; gap: 16px; font-size: 13px;">
-          <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background: var(--granata); margin-right: 6px;"></span>Allenamento</div>
-          <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background: var(--warning); margin-right: 6px;"></span>Partita</div>
+        <div class="card-title">📌 Questa Settimana</div>
+        <div id="week-events-list">
+          <div class="spinner"></div>
         </div>
       </div>
 
@@ -49,10 +49,11 @@ const CalendarPage = {
       document.getElementById('day-modal').classList.add('hidden');
     });
 
-    // Prima carica l'ID di S. Carlo Milano, poi carica gli eventi
+    // Prima carica l'ID di S. Carlo Milano, poi gli eventi
     await this.loadSanCarloId();
     await this.loadEvents();
     this.renderCalendar();
+    this.renderWeekEvents();
   },
 
   async loadSanCarloId() {
@@ -145,24 +146,23 @@ const CalendarPage = {
       const hasTraining = dayEvents.some(e => e.type === 'training');
       const hasMatch = dayEvents.some(e => e.type === 'match');
       
-      // ✅ TESTO al posto dei puntini
+      // ✅ TESTO al posto dei puntini (carattere aumentato a 9px)
       let eventText = '';
       if (hasTraining && hasMatch) {
-        // Entrambi: mostra orario allenamento + vs avversario
         const training = dayEvents.find(e => e.type === 'training');
         const match = dayEvents.find(e => e.type === 'match');
         const opponent = this.getShortOpponent(match.data);
         eventText = `
-          <div style="font-size:8px; color:var(--granata); font-weight:600; line-height:1.1; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${formatTime(training.data.time)}</div>
-          <div style="font-size:8px; color:var(--warning); font-weight:600; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">⚽vs ${opponent}</div>
+          <div style="font-size:9px; color:var(--granata); font-weight:600; line-height:1.2; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">🏃 ore ${formatTime(training.data.time)}</div>
+          <div style="font-size:9px; color:var(--warning); font-weight:600; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">⚽vs ${opponent} ore ${formatTime(match.data.match_time || '')}</div>
         `;
       } else if (hasTraining) {
         const training = dayEvents.find(e => e.type === 'training');
-        eventText = `<div style="font-size:8px; color:var(--granata); font-weight:600; line-height:1.1; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">🏃${formatTime(training.data.time)}</div>`;
+        eventText = `<div style="font-size:9px; color:var(--granata); font-weight:600; line-height:1.2; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;"> ore ${formatTime(training.data.time)}</div>`;
       } else if (hasMatch) {
         const match = dayEvents.find(e => e.type === 'match');
         const opponent = this.getShortOpponent(match.data);
-        eventText = `<div style="font-size:8px; color:var(--warning); font-weight:600; line-height:1.1; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">⚽vs ${opponent}</div>`;
+        eventText = `<div style="font-size:9px; color:var(--warning); font-weight:600; line-height:1.2; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">⚽vs ${opponent} ore ${formatTime(match.data.match_time || '')}</div>`;
       }
       
       const isToday = dateStr === today ? ' today' : '';
@@ -193,14 +193,91 @@ const CalendarPage = {
     });
   },
 
-  // Helper: nome corto dell'avversario (ultima parola)
+  // Helper: nome corto dell'avversario
   getShortOpponent(matchData) {
     const isHome = matchData.home_team_id === this.sanCarloId;
     const opponent = isHome ? matchData.away_team?.name : matchData.home_team?.name;
     if (!opponent) return '?';
-    // Prende l'ultima parola (es. "Inter Academy" → "Academy")
     const parts = opponent.split(' ');
     return parts.length > 1 ? parts[parts.length - 1] : opponent;
+  },
+
+  // Helper: bounds della settimana corrente (lun-dom)
+  getCurrentWeekBounds() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayOfWeek = today.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + mondayOffset);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+    return { start: monday, end: sunday };
+  },
+
+  renderWeekEvents() {
+    const container = document.getElementById('week-events-list');
+    if (!container) return;
+
+    const { start, end } = this.getCurrentWeekBounds();
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = end.toISOString().split('T')[0];
+
+    const weekEvents = this.events.filter(e => e.date >= startStr && e.date <= endStr)
+      .sort((a, b) => {
+        if (a.date !== b.date) return new Date(a.date) - new Date(b.date);
+        const aTime = a.data.time || a.data.match_time || '';
+        const bTime = b.data.time || b.data.match_time || '';
+        return aTime.localeCompare(bTime);
+      });
+
+    if (weekEvents.length === 0) {
+      container.innerHTML = '<p style="color: var(--gray-500); text-align: center; padding: 12px;">Nessun evento questa settimana</p>';
+      return;
+    }
+
+    let html = '';
+    weekEvents.forEach(ev => {
+      if (ev.type === 'training') {
+        const t = ev.data;
+        const dateObj = new Date(t.date);
+        const dayName = dateObj.toLocaleDateString('it-IT', { weekday: 'long' });
+        html += `
+          <div class="card" style="background: rgba(122,31,46,0.05); border-left: 4px solid var(--granata); margin-bottom: 8px;">
+            <div style="font-weight: 700; color: var(--granata);">🏃 Allenamento</div>
+            <div style="margin-top: 6px; font-size: 14px;">
+              📅 ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
+              ⏰ ore ${formatTime(t.time)}<br>
+              ${t.location ? '📍 ' + t.location + '<br>' : ''}
+              ${t.notes ? '📝 ' + t.notes : ''}
+            </div>
+          </div>
+        `;
+      } else if (ev.type === 'match') {
+        const m = ev.data;
+        const homeName = m.home_team?.name || 'Casa';
+        const awayName = m.away_team?.name || 'Ospite';
+        const score = (m.home_won_periods !== null && m.away_won_periods !== null) 
+          ? `${m.home_won_periods} - ${m.away_won_periods}` 
+          : 'vs';
+        const dateObj = new Date(m.match_date);
+        const dayName = dateObj.toLocaleDateString('it-IT', { weekday: 'long' });
+        html += `
+          <div class="card" style="background: rgba(245,158,11,0.08); border-left: 4px solid var(--warning); margin-bottom: 8px;">
+            <div style="font-weight: 700; color: var(--warning);">⚽ Partita · ${m.match_type === 'andata' ? 'Andata' : 'Ritorno'} G${m.matchday || '?'}</div>
+            <div style="margin-top: 6px; font-size: 14px;">
+              📅 ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
+              ⏰ ore ${m.match_time ? formatTime(m.match_time) : 'n.d.'}<br>
+               ${homeName} ${score} ${awayName}<br>
+              ${m.location ? '📍 ' + m.location : ''}
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    container.innerHTML = html;
   },
 
   showDayModal(dateStr, events) {
@@ -215,7 +292,7 @@ const CalendarPage = {
           <div class="card" style="background: rgba(122,31,46,0.05); border-left: 4px solid var(--granata);">
             <div style="font-weight: 700; color: var(--granata);">🏃 Allenamento</div>
             <div style="margin-top: 6px; font-size: 14px;">
-              ⏰ ${formatTime(t.time)}<br>
+              ⏰ ore ${formatTime(t.time)}<br>
               ${t.location ? '📍 ' + t.location + '<br>' : ''}
               ${t.notes ? '📝 ' + t.notes : ''}
             </div>
@@ -230,11 +307,11 @@ const CalendarPage = {
           : 'vs';
         html += `
           <div class="card" style="background: rgba(245,158,11,0.08); border-left: 4px solid var(--warning);">
-            <div style="font-weight: 700; color: var(--warning);">⚽ Partita · ${m.match_type === 'andata' ? 'Andata' : 'Ritorno'} G${m.matchday || '?'}</div>
+            <div style="font-weight: 700; color: var(--warning);"> Partita · ${m.match_type === 'andata' ? 'Andata' : 'Ritorno'} G${m.matchday || '?'}</div>
             <div style="margin-top: 8px; text-align: center;">
               <div style="font-size: 15px; font-weight: 600;">${homeName} ${score} ${awayName}</div>
               <div style="margin-top: 4px; font-size: 13px; color: var(--gray-700);">
-                ⏰ ${m.match_time ? formatTime(m.match_time) : 'n.d.'}
+                ⏰ ore ${m.match_time ? formatTime(m.match_time) : 'n.d.'}
                 ${m.location ? ' · 📍 ' + m.location : ''}
               </div>
             </div>
