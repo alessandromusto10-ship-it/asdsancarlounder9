@@ -1,4 +1,6 @@
 const StandingsPage = {
+  SANCARLO_TEAM_NAME: 'S. Carlo Milano',
+
   async render() {
     const view = document.getElementById('view');
     view.innerHTML = `
@@ -69,13 +71,13 @@ const StandingsPage = {
         standings[t.id] = {
           id: t.id,
           name: t.name,
-          pg: 0,  // partite giocate
-          tv: 0,  // tempi vinti
-          tp: 0,  // tempi persi
-          dt: 0,  // differenza tempi
-          v: 0,   // vittorie
-          p: 0,   // pareggi
-          s: 0    // sconfitte
+          pg: 0,
+          tv: 0,
+          tp: 0,
+          dt: 0,
+          v: 0,
+          p: 0,
+          s: 0
         };
       });
       
@@ -86,21 +88,17 @@ const StandingsPage = {
           
           if (!home || !away) return;
           
-          // Aggiorna partite giocate
           home.pg++;
           away.pg++;
           
-          // Aggiorna tempi vinti/persi
           home.tv += m.home_won_periods;
           home.tp += m.away_won_periods;
           away.tv += m.away_won_periods;
           away.tp += m.home_won_periods;
           
-          // Calcola differenza
           home.dt = home.tv - home.tp;
           away.dt = away.tv - away.tp;
           
-          // Vittoria/Pareggio/Sconfitta
           if (m.home_won_periods > m.away_won_periods) {
             home.v++;
             away.s++;
@@ -143,18 +141,29 @@ const StandingsPage = {
       
       sorted.forEach((team, idx) => {
         const position = idx + 1;
-        let posStyle = '';
-        if (position === 1) posStyle = 'background: linear-gradient(90deg, rgba(251,191,36,0.1), transparent);';
-        else if (position === 2) posStyle = 'background: linear-gradient(90deg, rgba(192,192,192,0.1), transparent);';
-        else if (position === 3) posStyle = 'background: linear-gradient(90deg, rgba(205,127,50,0.1), transparent);';
+        const isSanCarlo = team.name === this.SANCARLO_TEAM_NAME;
         
-        const isSanCarlo = team.name.toLowerCase().includes('san carlo');
-        const nameStyle = isSanCarlo ? 'font-weight: 700; color: var(--granata);' : '';
+        // Stile per S. Carlo Milano: evidenziato
+        let rowStyle = '';
+        let nameStyle = '';
+        let posHtml = position;
+        
+        if (isSanCarlo) {
+          rowStyle = 'background: rgba(122,31,46,0.08); font-weight: 700;';
+          nameStyle = 'color: var(--granata); font-weight: 700;';
+          posHtml = `<span style="color: var(--granata);">⭐ ${position}</span>`;
+        } else if (position === 1) {
+          rowStyle = 'background: linear-gradient(90deg, rgba(251,191,36,0.1), transparent);';
+        } else if (position === 2) {
+          rowStyle = 'background: linear-gradient(90deg, rgba(192,192,192,0.1), transparent);';
+        } else if (position === 3) {
+          rowStyle = 'background: linear-gradient(90deg, rgba(205,127,50,0.1), transparent);';
+        }
         
         html += `
-          <tr style="${posStyle}">
-            <td style="text-align: center; font-weight: 700;">${position}</td>
-            <td style="${nameStyle}">${team.name}</td>
+          <tr style="${rowStyle}">
+            <td style="text-align: center; font-weight: 700;">${posHtml}</td>
+            <td style="${nameStyle}">${isSanCarlo ? '⭐ ' : ''}${team.name}</td>
             <td style="text-align: center;">${team.pg}</td>
             <td style="text-align: center; font-weight: 700; color: #f59e0b;">${team.tv}</td>
             <td style="text-align: center;">${team.tp}</td>

@@ -1,6 +1,7 @@
 const ChampionshipPage = {
   championshipId: null,
   filterType: 'all',
+  SANCARLO_TEAM_NAME: 'S. Carlo Milano', // Nome fisso della squadra
 
   async render() {
     const view = document.getElementById('view');
@@ -17,7 +18,7 @@ const ChampionshipPage = {
           </div>
           <div class="form-group">
             <label>📅 Stagione</label>
-            <input type="text" id="champ-season" class="form-control" placeholder="Es: 2025-2026" />
+            <input type="text" id="champ-season" class="form-control" placeholder="Es: 2026/2027" />
           </div>
           <button type="submit" class="btn btn-primary btn-block">💾 Salva Info</button>
         </form>
@@ -54,7 +55,7 @@ const ChampionshipPage = {
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="margin-bottom: 0;">
-              <label>📅 Data</label>
+              <label> Data</label>
               <input type="date" id="match-date" class="form-control" required />
             </div>
             <div class="form-group" style="margin-bottom: 0;">
@@ -119,7 +120,7 @@ const ChampionshipPage = {
             <input type="hidden" id="edit-match-id" />
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
               <div class="form-group" style="margin-bottom: 0;">
-                <label>📅 Giornata</label>
+                <label> Giornata</label>
                 <input type="number" id="edit-match-day" class="form-control" min="1" required />
               </div>
               <div class="form-group" style="margin-bottom: 0;">
@@ -146,7 +147,7 @@ const ChampionshipPage = {
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
               <div class="form-group" style="margin-bottom: 0;">
-                <label>🏠 Casa</label>
+                <label> Casa</label>
                 <select id="edit-match-home" class="form-control" required>
                   <option value="">-- Seleziona --</option>
                 </select>
@@ -166,7 +167,7 @@ const ChampionshipPage = {
                 <input type="number" id="edit-match-away-score" class="form-control" min="0" max="3" style="text-align: center;" />
               </div>
             </div>
-            <button type="submit" class="btn btn-primary btn-block">💾 Salva Modifiche</button>
+            <button type="submit" class="btn btn-primary btn-block"> Salva Modifiche</button>
           </form>
         </div>
       </div>
@@ -175,10 +176,10 @@ const ChampionshipPage = {
       <div class="card" style="border: 2px solid var(--danger);">
         <div class="card-title" style="color: var(--danger);">🗑️ Reset Campionato</div>
         <p style="font-size: 13px; color: var(--gray-700); margin-bottom: 12px;">
-          ⚠️ Questa azione eliminerà <strong>tutte le partite</strong> del campionato. Le squadre verranno mantenute.
+          ⚠️ Questa azione eliminerà <strong>tutte le partite</strong> e <strong>tutte le squadre</strong> (tranne S. Carlo Milano).
         </p>
-        <button id="btn-reset-matches" class="btn btn-block" style="background: var(--danger); color: var(--white);">
-          🗑️ Elimina Tutte le Partite
+        <button id="btn-reset-camp" class="btn btn-block" style="background: var(--danger); color: var(--white);">
+          🗑️ Reset Completo (Partite + Squadre)
         </button>
       </div>
     `;
@@ -225,9 +226,9 @@ const ChampionshipPage = {
       await this.updateMatch();
     });
 
-    // Reset
-    document.getElementById('btn-reset-matches').addEventListener('click', async () => {
-      await this.resetMatches();
+    // Reset campionato (partite + squadre)
+    document.getElementById('btn-reset-camp').addEventListener('click', async () => {
+      await this.resetChampionship();
     });
 
     await this.loadTeams();
@@ -246,12 +247,12 @@ const ChampionshipPage = {
       if (data && data.length > 0) {
         this.championshipId = data[0].id;
         document.getElementById('champ-name').value = data[0].name;
-        document.getElementById('champ-season').value = data[0].season || '';
+        document.getElementById('champ-season').value = data[0].season || '2026/2027';
       } else {
-        // Crea campionato di default
+        // Crea campionato di default con stagione 2026/2027
         const { data: newChamp, error: cErr } = await db
           .from('championships')
-          .insert({ name: 'Campionato Under 9', season: '2025-2026' })
+          .insert({ name: 'Campionato Under 9', season: '2026/2027' })
           .select()
           .single();
         
@@ -259,10 +260,28 @@ const ChampionshipPage = {
         this.championshipId = newChamp.id;
         document.getElementById('champ-name').value = newChamp.name;
         document.getElementById('champ-season').value = newChamp.season;
-        toast('Campionato creato automaticamente', 'success');
+        
+        // Crea automaticamente la squadra S. Carlo Milano
+        await this.createSanCarloTeam(newChamp.id);
+        
+        toast('Campionato creato con S. Carlo Milano ✅', 'success');
       }
     } catch (err) {
       toast('Errore: ' + err.message, 'error');
+    }
+  },
+
+  async createSanCarloTeam(championshipId) {
+    try {
+      const { error } = await db.from('teams').insert({
+        championship_id: championshipId,
+        name: this.SANCARLO_TEAM_NAME
+      });
+      
+      if (error) throw error;
+      console.log('✅ Squadra S. Carlo Milano creata automaticamente');
+    } catch (err) {
+      console.error('Errore creazione S. Carlo Milano:', err);
     }
   },
 
@@ -303,13 +322,20 @@ const ChampionshipPage = {
       if (!data || data.length === 0) {
         container.innerHTML = '<p style="color: var(--gray-500); text-align: center; padding: 12px;">Nessuna squadra</p>';
       } else {
-        container.innerHTML = data.map(t => `
-          <div class="attendance-row">
-            <div style="flex: 1; font-weight: 600;">${t.name}</div>
-            <button class="icon-btn" onclick="ChampionshipPage.deleteTeam('${t.id}', '${t.name}')" 
-                    style="background: var(--danger); color: var(--white); width: 32px; height: 32px; font-size: 14px;">🗑️</button>
-          </div>
-        `).join('');
+        container.innerHTML = data.map(t => {
+          const isSanCarlo = t.name === this.SANCARLO_TEAM_NAME;
+          return `
+            <div class="attendance-row" style="${isSanCarlo ? 'background: rgba(122,31,46,0.05); border-left: 3px solid var(--granata); padding-left: 12px;' : ''}">
+              <div style="flex: 1; font-weight: ${isSanCarlo ? '700' : '600'}; color: ${isSanCarlo ? 'var(--granata)' : 'inherit'};">
+                ${isSanCarlo ? '⭐ ' : ''}${t.name}
+              </div>
+              ${!isSanCarlo ? `
+                <button class="icon-btn" onclick="ChampionshipPage.deleteTeam('${t.id}', '${t.name}')" 
+                        style="background: var(--danger); color: var(--white); width: 32px; height: 32px; font-size: 14px;">🗑️</button>
+              ` : '<span class="badge badge-granata">Squadra fissa</span>'}
+            </div>
+          `;
+        }).join('');
       }
       
       // Aggiorna menu a tendina partite
@@ -338,6 +364,12 @@ const ChampionshipPage = {
   async addTeam() {
     const name = document.getElementById('team-name').value.trim();
     if (!name) return;
+    
+    // Controlla che non sia già presente
+    if (name.toLowerCase() === this.SANCARLO_TEAM_NAME.toLowerCase()) {
+      toast('La squadra S. Carlo Milano è già presente', 'error');
+      return;
+    }
     
     try {
       const { error } = await db.from('teams').insert({
@@ -568,18 +600,30 @@ const ChampionshipPage = {
     }
   },
 
-  async resetMatches() {
-    if (!confirm('⚠️ ATTENZIONE: Questa azione eliminerà TUTTE le partite del campionato. Continuare?')) return;
+  async resetChampionship() {
+    if (!confirm('⚠️ ATTENZIONE: Questa azione eliminerà TUTTE le partite e TUTTE le squadre (tranne S. Carlo Milano). Continuare?')) return;
     if (!confirm('Sei davvero sicuro? Questa azione è IRREVERSIBILE.')) return;
     
     try {
-      const { error } = await db
+      // 1. Elimina tutte le partite
+      const { error: mErr } = await db
         .from('matches')
         .delete()
         .eq('championship_id', this.championshipId);
       
-      if (error) throw error;
-      toast('Tutte le partite sono state eliminate', 'success');
+      if (mErr) throw mErr;
+      
+      // 2. Elimina tutte le squadre tranne S. Carlo Milano
+      const { error: tErr } = await db
+        .from('teams')
+        .delete()
+        .eq('championship_id', this.championshipId)
+        .neq('name', this.SANCARLO_TEAM_NAME);
+      
+      if (tErr) throw tErr;
+      
+      toast('Reset completato! S. Carlo Milano mantenuta ✅', 'success');
+      await this.loadTeams();
       await this.loadMatches();
     } catch (err) {
       toast('Errore: ' + err.message, 'error');
