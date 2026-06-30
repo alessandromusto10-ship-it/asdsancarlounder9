@@ -25,9 +25,23 @@ const Auth = {
       }
     });
     if (error) throw error;
-    // Se è un genitore, collega il player
+    
+    // Se è un genitore, collega il giocatore al primo slot libero
     if (role === 'genitore' && playerId && data.user) {
-      await db.from('players').update({ parent_id: data.user.id }).eq('id', playerId);
+      // Controlla se il primo slot è libero
+      const { data: playerData } = await db
+        .from('players')
+        .select('parent_id')
+        .eq('id', playerId)
+        .single();
+
+      if (playerData && !playerData.parent_id) {
+        // Slot 1 libero
+        await db.from('players').update({ parent_id: data.user.id }).eq('id', playerId);
+      } else {
+        // Slot 1 occupato, usa Slot 2
+        await db.from('players').update({ parent_id_2: data.user.id }).eq('id', playerId);
+      }
     }
     return data;
   },
