@@ -8,10 +8,11 @@ const RegisterPage = {
           <h1 class="login-title"> Registrazione</h1>
           <p class="login-subtitle">Crea il tuo account</p>
 
-          <!-- Tab ruolo -->
-          <div class="role-tabs">
-            <button class="role-tab active" data-role="mister">⚽ Mister</button>
-            <button class="role-tab" data-role="genitore">‍👩‍👦 Genitore</button>
+          <!-- Solo registrazione genitori -->
+          <div style="text-align: center; margin-bottom: 16px;">
+            <span style="display: inline-block; padding: 10px 20px; background: var(--gray-100); border-radius: var(--radius); font-weight: 600; color: var(--granata);">
+              👨‍👩‍ Registrazione Genitore
+            </span>
           </div>
 
           <form id="register-form">
@@ -33,7 +34,7 @@ const RegisterPage = {
             </div>
 
             <!-- Campo figlio (solo per genitori) -->
-            <div id="player-section" class="hidden">
+            <div id="player-section">
               <div class="form-group">
                 <label>👦 Seleziona tuo figlio</label>
                 <select id="reg-player" class="form-control" required>
@@ -43,7 +44,7 @@ const RegisterPage = {
                   <div class="spinner" style="width:20px;height:20px;margin:8px auto;"></div>
                 </div>
                 <small style="color: var(--gray-500); display:block; margin-top:6px;">
-                   Se non vedi il nome, contatta il mister.
+                  📌 Se non vedi il nome di tuo figlio, contatta il mister.
                 </small>
               </div>
             </div>
@@ -60,25 +61,10 @@ const RegisterPage = {
       </div>
     `;
 
-    let currentRole = 'mister';
-    const tabs = view.querySelectorAll('.role-tab');
     const playerSection = view.querySelector('#player-section');
     const playerSelect = view.querySelector('#reg-player');
     const playerLoading = view.querySelector('#player-loading');
     let playersLoaded = false;
-
-    const updateRoleUI = async () => {
-      tabs.forEach(t => t.classList.toggle('active', t.dataset.role === currentRole));
-      
-      if (currentRole === 'genitore') {
-        playerSection.classList.remove('hidden');
-        playerSelect.required = true;
-        if (!playersLoaded) await loadPlayers();
-      } else {
-        playerSection.classList.add('hidden');
-        playerSelect.required = false;
-      }
-    };
 
     // Carica giocatori con ALMENO UNO SLOT LIBERO
     const loadPlayers = async () => {
@@ -86,7 +72,6 @@ const RegisterPage = {
       playerSelect.innerHTML = '<option value="">-- Seleziona --</option>';
       
       try {
-        // Query: prendi giocatori dove parent_id È NULL oppure parent_id_2 È NULL
         const { data, error } = await db
           .from('players')
           .select('id, first_name, last_name')
@@ -114,13 +99,6 @@ const RegisterPage = {
       }
     };
 
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        currentRole = tab.dataset.role;
-        updateRoleUI();
-      });
-    });
-
     // Submit
     view.querySelector('#register-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -130,7 +108,7 @@ const RegisterPage = {
       const playerId = playerSelect.value;
       const btn = e.target.querySelector('button[type="submit"]');
       
-      if (currentRole === 'genitore' && !playerId) {
+      if (!playerId) {
         return toast('Seleziona tuo figlio', 'error');
       }
       
@@ -138,9 +116,9 @@ const RegisterPage = {
       btn.textContent = 'Registrazione...';
       
       try {
-        await Auth.signUp(email, password, name, currentRole, playerId || null);
+        await Auth.signUp(email, password, name, 'genitore', playerId);
         toast('Registrazione completata! Ora puoi accedere. ✅', 'success');
-        setTimeout(() => Router.navigate('/login'), 2000);
+        setTimeout(() => Router.navigate('/login'), 1500);
       } catch (err) {
         toast(err.message || 'Errore registrazione', 'error');
       } finally {
@@ -149,7 +127,8 @@ const RegisterPage = {
       }
     });
 
-    updateRoleUI();
+    // Carica subito i giocatori
+    await loadPlayers();
   }
 };
 
