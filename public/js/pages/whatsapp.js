@@ -1,6 +1,20 @@
 const WhatsAppPage = {
   selectedPlayers: new Set(),
+  selectedEquipment: new Set(),
   currentConvocationId: null,
+
+  // Lista attrezzatura con emoji
+  EQUIPMENT_LIST: [
+    { id: 'borraccia', label: 'Borraccia', emoji: '💧' },
+    { id: 'pantaloncini', label: 'Pantaloncini ERREA', emoji: '' },
+    { id: 'parastinchi', label: 'Parastinchi', emoji: '🦵' },
+    { id: 'scarpe', label: 'Scarpe da calcio', emoji: '👟' },
+    { id: 'maglia', label: 'Maglia con numero', emoji: '👕' },
+    { id: 'calzettoni', label: 'Calzettoni', emoji: '🧦' },
+    { id: 'tuta', label: 'Tuta di rappresentanza', emoji: '🏃♂️' },
+    { id: 'giaccone', label: 'Giaccone', emoji: '🧥' },
+    { id: 'kway', label: 'Kway', emoji: '🌧️' }
+  ],
 
   async render() {
     const view = document.getElementById('view');
@@ -33,7 +47,7 @@ const WhatsAppPage = {
               <input type="time" id="conv-meeting" class="form-control" required />
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-              <label> Orario Inizio</label>
+              <label>⚽ Orario Inizio</label>
               <input type="time" id="conv-kickoff" class="form-control" required />
             </div>
           </div>
@@ -41,10 +55,19 @@ const WhatsAppPage = {
             <label>🧦 Divisa / Kit</label>
             <input type="text" id="conv-kit" class="form-control" value="Maglia granata, pantaloncini neri, calzettoni granata" />
           </div>
+
+          <!--  Cosa Portare (Selezione Multipla) -->
           <div class="form-group">
             <label>🎒 Cosa Portare</label>
-            <input type="text" id="conv-bring" class="form-control" placeholder="Es: Parastinchi, acqua, cambio" />
+            <div class="role-tabs" style="margin-bottom: 8px;">
+              <button type="button" id="btn-equip-all" class="role-tab" style="padding: 6px; font-size: 12px;">✅ Tutti</button>
+              <button type="button" id="btn-equip-none" class="role-tab" style="padding: 6px; font-size: 12px;">❌ Nessuno</button>
+            </div>
+            <div id="conv-equip-list" style="max-height: 220px; overflow-y: auto; border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 8px; background: var(--gray-50);">
+              <!-- Checkboxes iniettati via JS -->
+            </div>
           </div>
+
           <div class="form-group">
             <label>📝 Note (opzionale)</label>
             <textarea id="conv-notes" class="form-control" rows="2" placeholder="Es: Portare certificato medico"></textarea>
@@ -55,7 +78,7 @@ const WhatsAppPage = {
       <!-- Selezione Convocati -->
       <div class="card">
         <div class="flex-between mb-4">
-          <div class="card-title" style="margin-bottom: 0;">👇 Convocati</div>
+          <div class="card-title" style="margin-bottom: 0;"> Convocati</div>
           <div style="display: flex; gap: 6px;">
             <button id="btn-select-all" class="btn btn-ghost" style="font-size: 12px; padding: 4px 8px;">✅ Tutti</button>
             <button id="btn-deselect-all" class="btn btn-ghost" style="font-size: 12px; padding: 4px 8px;">❌ Nessuno</button>
@@ -68,37 +91,43 @@ const WhatsAppPage = {
 
       <!-- Anteprima & Azioni -->
       <div class="card">
-        <div class="card-title">📱 Anteprima Messaggio</div>
-        <textarea id="msg-preview" class="form-control" rows="10" readonly style="font-family: monospace; font-size: 13px; background: var(--gray-50);"></textarea>
+        <div class="card-title"> Anteprima Messaggio</div>
+        <textarea id="msg-preview" class="form-control" rows="12" readonly style="font-family: monospace; font-size: 13px; background: var(--gray-50);"></textarea>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;">
           <button id="btn-save-conv" class="btn btn-secondary">💾 Salva Bozza</button>
           <button id="btn-copy-msg" class="btn btn-secondary">📋 Copia</button>
         </div>
         <button id="btn-open-wa" class="btn btn-primary btn-block" style="margin-top: 8px;">📲 Apri WhatsApp</button>
         <small style="display: block; text-align: center; margin-top: 6px; color: var(--gray-500); font-size: 11px;">
-          ℹ️ Apre sempre WhatsApp normale (non Business)
+          ️ Apre sempre WhatsApp normale (non Business)
         </small>
       </div>
 
       <!-- Messaggi Rapidi -->
       <div class="card">
-        <div class="card-title"> Messaggi Rapidi</div>
+        <div class="card-title">⚡ Messaggi Rapidi</div>
         <div id="quick-msgs-list"></div>
       </div>
     `;
 
-    // Event Listeners
+    // Event Listeners Dettagli
     document.getElementById('conv-match').addEventListener('change', (e) => this.loadExistingConvocation(e.target.value));
     document.getElementById('conv-date').addEventListener('input', () => this.updatePreview());
     document.getElementById('conv-location').addEventListener('input', () => this.updatePreview());
     document.getElementById('conv-meeting').addEventListener('input', () => this.updatePreview());
     document.getElementById('conv-kickoff').addEventListener('input', () => this.updatePreview());
     document.getElementById('conv-kit').addEventListener('input', () => this.updatePreview());
-    document.getElementById('conv-bring').addEventListener('input', () => this.updatePreview());
     document.getElementById('conv-notes').addEventListener('input', () => this.updatePreview());
 
+    // Event Listeners Equipaggiamento
+    document.getElementById('btn-equip-all').addEventListener('click', () => this.toggleAllEquipment(true));
+    document.getElementById('btn-equip-none').addEventListener('click', () => this.toggleAllEquipment(false));
+
+    // Event Listeners Convocati
     document.getElementById('btn-select-all').addEventListener('click', () => this.toggleAllPlayers(true));
     document.getElementById('btn-deselect-all').addEventListener('click', () => this.toggleAllPlayers(false));
+    
+    // Azioni
     document.getElementById('btn-save-conv').addEventListener('click', () => this.saveConvocation());
     document.getElementById('btn-copy-msg').addEventListener('click', () => this.copyMessage());
     document.getElementById('btn-open-wa').addEventListener('click', () => this.openWhatsApp());
@@ -106,7 +135,37 @@ const WhatsAppPage = {
     // Caricamento iniziale
     await this.loadMatches();
     await this.loadPlayers();
+    this.renderEquipmentList();
     this.renderQuickMessages();
+    this.updatePreview();
+  },
+
+  // ===== RENDER LISTA ATTREZZATURA =====
+  renderEquipmentList() {
+    const container = document.getElementById('conv-equip-list');
+    container.innerHTML = this.EQUIPMENT_LIST.map(item => `
+      <label style="display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid var(--gray-200); cursor: pointer;">
+        <input type="checkbox" class="equip-cb" value="${item.id}" style="width: 18px; height: 18px; accent-color: var(--granata);" />
+        <span style="font-size: 16px;">${item.emoji}</span>
+        <span style="flex: 1; font-weight: 500; font-size: 14px;">${item.label}</span>
+      </label>
+    `).join('');
+
+    container.querySelectorAll('.equip-cb').forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (cb.checked) this.selectedEquipment.add(cb.value);
+        else this.selectedEquipment.delete(cb.value);
+        this.updatePreview();
+      });
+    });
+  },
+
+  toggleAllEquipment(selectAll) {
+    document.querySelectorAll('.equip-cb').forEach(cb => {
+      cb.checked = selectAll;
+      if (selectAll) this.selectedEquipment.add(cb.value);
+      else this.selectedEquipment.delete(cb.value);
+    });
     this.updatePreview();
   },
 
@@ -148,7 +207,6 @@ const WhatsAppPage = {
       
       if (error) throw error;
       
-      // ️ MODIFICA: NON selezionare automaticamente tutti i giocatori
       this.selectedPlayers.clear();
       
       container.innerHTML = data?.map(p => `
@@ -180,6 +238,7 @@ const WhatsAppPage = {
     document.getElementById('conv-kickoff').value = '';
     document.getElementById('conv-notes').value = '';
     this.selectedPlayers.clear();
+    this.selectedEquipment.clear();
     this.currentConvocationId = null;
     
     try {
@@ -199,9 +258,18 @@ const WhatsAppPage = {
         this.currentConvocationId = conv.id;
         document.getElementById('conv-meeting').value = conv.meeting_time || '';
         document.getElementById('conv-kit').value = conv.kit_info || 'Maglia granata, pantaloncini neri, calzettoni granata';
-        document.getElementById('conv-bring').value = conv.what_to_bring || '';
         document.getElementById('conv-notes').value = conv.notes || '';
         
+        // Ripristina attrezzatura salvata (separata da virgola)
+        if (conv.what_to_bring) {
+          const savedEquip = conv.what_to_bring.split(',').filter(id => id.trim());
+          savedEquip.forEach(id => this.selectedEquipment.add(id));
+          document.querySelectorAll('.equip-cb').forEach(cb => {
+            cb.checked = this.selectedEquipment.has(cb.value);
+          });
+        }
+        
+        // Ripristina giocatori
         conv.players?.filter(p => p.selected).forEach(p => this.selectedPlayers.add(p.player_id));
         document.querySelectorAll('.player-cb').forEach(cb => {
           cb.checked = this.selectedPlayers.has(cb.value);
@@ -231,18 +299,25 @@ const WhatsAppPage = {
     const meeting = document.getElementById('conv-meeting').value;
     const kickoff = document.getElementById('conv-kickoff').value;
     const kit = document.getElementById('conv-kit').value;
-    const bring = document.getElementById('conv-bring').value;
     const notes = document.getElementById('conv-notes').value;
 
     const matchOption = document.getElementById('conv-match').selectedOptions[0];
     const matchText = matchId ? matchOption.textContent : '[Partita non selezionata]';
     
-    // ⚠️ MODIFICA: Lista convocati uno sotto l'altro
+    // Convocati uno sotto l'altro
     const selectedNames = Array.from(document.querySelectorAll('.player-cb:checked'))
-      .map(cb => cb.parentElement.querySelector('span').textContent)
+      .map(cb => cb.parentElement.querySelector('span:nth-child(3)').textContent)
       .join('\n');
 
-    const msg = `️ *CONVOCAZIONE - ASD San Carlo Milano U9*
+    // 🎒 Attrezzatura uno sotto l'altro con emoji
+    const selectedEquip = Array.from(document.querySelectorAll('.equip-cb:checked'))
+      .map(cb => {
+        const item = this.EQUIPMENT_LIST.find(e => e.id === cb.value);
+        return item ? `${item.emoji} ${item.label}` : cb.value;
+      })
+      .join('\n');
+
+    const msg = `🏟️ *CONVOCAZIONE - ASD San Carlo Milano U9*
 
 ⚽ *Partita:* ${matchText}
 📅 *Data:* ${date ? new Date(date).toLocaleDateString('it-IT') : '[Da definire]'}
@@ -250,7 +325,9 @@ const WhatsAppPage = {
 📍 *Luogo:* ${location || '[Da definire]'}
 
 🧦 *Divisa:* ${kit}
-🎒 *Da portare:* ${bring || '[Nessuna indicazione]'}
+
+🎒 *Da portare:*
+${selectedEquip || '[Nessun articolo selezionato]'}
 
 👇 *CONVOCATI:*
 ${selectedNames || '[Nessun giocatore selezionato]'}
@@ -266,11 +343,14 @@ Grazie e buon calcio! ⚽`;
     const matchId = document.getElementById('conv-match').value;
     if (!matchId) return toast('Seleziona una partita', 'error');
     
+    // Salva attrezzatura come stringa separata da virgola
+    const whatToBring = Array.from(this.selectedEquipment).join(',');
+
     const payload = {
       match_id: matchId,
       meeting_time: document.getElementById('conv-meeting').value,
       kit_info: document.getElementById('conv-kit').value,
-      what_to_bring: document.getElementById('conv-bring').value,
+      what_to_bring: whatToBring,
       notes: document.getElementById('conv-notes').value
     };
 
@@ -313,7 +393,7 @@ Grazie e buon calcio! ⚽`;
   copyMessage() {
     const msg = document.getElementById('msg-preview').value;
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(msg).then(() => toast('Messaggio copiato! ', 'success'));
+      navigator.clipboard.writeText(msg).then(() => toast('Messaggio copiato! 📋', 'success'));
     } else {
       const ta = document.createElement('textarea');
       ta.value = msg;
@@ -321,7 +401,7 @@ Grazie e buon calcio! ⚽`;
       ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
-      toast('Messaggio copiato! 📋', 'success');
+      toast('Messaggio copiato! ', 'success');
     }
   },
 
@@ -364,7 +444,7 @@ Grazie e buon calcio! ⚽`;
 
   quickMessages: [
     {
-      label: '‍♂️ Promemoria Presenza',
+      label: '🏃‍️ Promemoria Presenza',
       generator: () => {
         const date = document.getElementById('conv-date').value || '[data allenamento]';
         return `🔔 *PROMEMORIA*\nCiao a tutti! Ricordatevi di confermare la presenza per l'allenamento/partita del ${date}. Grazie! ⚽`;
@@ -375,7 +455,7 @@ Grazie e buon calcio! ⚽`;
       generator: () => {
         const match = document.getElementById('conv-match').selectedOptions[0]?.textContent || '[partita]';
         const time = document.getElementById('conv-meeting').value || '[ora]';
-        return `⚽ *RICORDO PARTITA*\nVi aspetto per ${match}!\n Ritrovo: ${time}\nPortate tutto il materiale e tanta grinta! 💪`;
+        return `⚽ *RICORDO PARTITA*\nVi aspetto per ${match}!\n⏰ Ritrovo: ${time}\nPortate tutto il materiale e tanta grinta! 💪🤝`;
       }
     },
     {
@@ -385,9 +465,9 @@ Grazie e buon calcio! ⚽`;
       }
     },
     {
-      label: ' Scadenza Certificati',
+      label: '🩺 Scadenza Certificati',
       generator: () => {
-        return `🩺 *SCADENZA CERTIFICATI MEDICI*\nAi genitori ricordiamo di controllare la scadenza del certificato medico e di consegnare il rinnovo prima della data indicata. È obbligatorio per partecipare agli allenamenti e alle partite. Grazie per la collaborazione! 📋✅`;
+        return ` *SCADENZA CERTIFICATI MEDICI*\nAi genitori ricordiamo di controllare la scadenza del certificato medico e di consegnare il rinnovo prima della data indicata. È obbligatorio per partecipare agli allenamenti e alle partite. Grazie per la collaborazione! 📋✅`;
       }
     }
   ],
