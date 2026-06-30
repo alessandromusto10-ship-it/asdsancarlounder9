@@ -99,17 +99,15 @@ function renderNav(role) {
   if (!nav) return;
 
   if (role === 'mister') {
-    // Elementi dentro il menu Gestione (ORDINE RICHIESTO)
     const managementItems = [
       { path: '/attendance', icon: '✅', label: 'Presenze' },
       { path: '/roster', icon: '👥', label: 'Rosa' },
+      { path: '/championship', icon: '🏟️', label: 'Campionato' },
       { path: '/trainings', icon: '🏃', label: 'Allenamenti' },
       { path: '/results', icon: '📊', label: 'Risultati' },
-      { path: '/championship', icon: '🏟️', label: 'Campionato' },
       { path: '/stats', icon: '📈', label: 'Statistiche' }
     ];
 
-    // Renderizza contenuto bottom sheet (layout verticale)
     const sheetContent = $('#bottom-sheet-content');
     if (sheetContent) {
       sheetContent.innerHTML = managementItems.map(item => `
@@ -127,7 +125,6 @@ function renderNav(role) {
       });
     }
 
-    // Nav principale: 6 voci
     nav.innerHTML = `
       <button class="nav-item" data-path="/" onclick="Router.navigate('/')">
         <span class="nav-icon">🏠</span><span>Home</span>
@@ -152,7 +149,6 @@ function renderNav(role) {
     $('#btn-gear')?.addEventListener('click', openBottomSheet);
 
   } else {
-    // Genitori: 6 voci
     nav.innerHTML = `
       <button class="nav-item" data-path="/" onclick="Router.navigate('/')">
         <span class="nav-icon">🏠</span><span>Home</span>
@@ -195,16 +191,57 @@ Router.register('/championship', () => ChampionshipPage.render());
 // ===== INIT =====
 async function init() {
   const auth = await Auth.getCurrentUser();
-  if (auth?.profile) {
+  
+  if (auth?.user) {
+    // Se l'utente è loggato ma non ha profilo, prova a crearlo (caso login Google mister)
+    if (!auth.profile) {
+      console.log('🔍 Utente senza profilo, verifico se è un mister...');
+      try {
+        const misterProfile = await Auth.ensureMisterProfile(auth.user);
+        if (misterProfile) {
+          console.log('✅ Profilo mister creato/verificato');
+          const updatedAuth = await Auth.getCurrentUser();
+          if (updatedAuth?.profile) {
+            $('#app-header')?.classList.remove('hidden');
+            $('#bottom-nav')?.classList.remove('hidden');
+            const userNameEl = $('#user-name');
+            if (userNameEl) {
+              userNameEl.textContent = updatedAuth.profile.full_name || updatedAuth.user.email;
+            }
+            renderNav(updatedAuth.profile.role);
+            Router.resolve();
+            return;
+          }
+        } else {
+          console.warn('⚠️ Email non autorizzata come mister, logout...');
+          await Auth.signOut();
+          toast('Accesso non autorizzato. Contatta l\'amministratore.', 'error');
+          $('#app-header')?.classList.add('hidden');
+          $('#bottom-nav')?.classList.add('hidden');
+          Router.navigate('/login');
+          return;
+        }
+      } catch (err) {
+        console.error('❌ Errore creazione profilo:', err);
+        await Auth.signOut();
+        toast('Errore durante l\'accesso: ' + err.message, 'error');
+        Router.navigate('/login');
+        return;
+      }
+    }
+    
     $('#app-header')?.classList.remove('hidden');
     $('#bottom-nav')?.classList.remove('hidden');
     const userNameEl = $('#user-name');
-    if (userNameEl) userNameEl.textContent = auth.profile.full_name || auth.user.email;
+    if (userNameEl) {
+      userNameEl.textContent = auth.profile.full_name || auth.user.email;
+    }
     renderNav(auth.profile.role);
   } else {
     $('#app-header')?.classList.add('hidden');
     $('#bottom-nav')?.classList.add('hidden');
   }
+  
   Router.resolve();
 }
 
