@@ -35,7 +35,7 @@ const AttendancePage = {
 
     view.innerHTML = `
       <h2 style="color: var(--granata); margin-bottom: 16px;">
-        ${this.isMister ? '📝 Gestione Presenze' : '🏃 Conferma Presenza'}
+        ${this.isMister ? ' Gestione Presenze' : '🏃 Conferma Presenza'}
       </h2>
 
       ${!this.isMister ? `
@@ -131,8 +131,10 @@ const AttendancePage = {
                         'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
     document.getElementById('month-title').textContent = `${monthNames[month]} ${year}`;
     
+    // ✅ FIX: Calcola correttamente il primo e ultimo giorno del mese
     const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-    const endDate = `${year}-${String(month + 1).padStart(2, '0')}-31`;
+    const lastDayOfMonth = new Date(year, month + 1, 0).getDate(); 
+    const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`;
     
     try {
       const { data: trainings, error } = await db
@@ -148,16 +150,13 @@ const AttendancePage = {
       if (!trainings || trainings.length === 0) {
         container.innerHTML = `
           <p style="color: var(--gray-500); text-align: center; padding: 20px;">
-             Nessun allenamento in questo mese
+            📭 Nessun allenamento in questo mese
           </p>
         `;
         return;
       }
       
       const today = new Date().toISOString().split('T')[0];
-      const { start: weekStart, end: weekEnd } = this.getCurrentWeekBounds();
-      const weekStartStr = weekStart.toISOString().split('T')[0];
-      const weekEndStr = weekEnd.toISOString().split('T')[0];
       
       let html = '';
       trainings.forEach(t => {
@@ -167,7 +166,7 @@ const AttendancePage = {
         
         let statusBadge = '';
         if (isInWeek) {
-          statusBadge = '<span class="badge badge-warning">️ Modificabile</span>';
+          statusBadge = '<span class="badge badge-warning">✏️ Modificabile</span>';
         } else if (isPast) {
           statusBadge = '<span class="badge badge-granata">✓ Passato</span>';
         } else {
@@ -191,7 +190,7 @@ const AttendancePage = {
                 ${confirmedInfo}
               </div>
               <div style="font-size: 13px; color: var(--gray-700); margin-top: 4px;">
-                 ${formatTime(t.time)} ${t.location ? '· 📍 ' + t.location : ''}
+                ⏰ ${formatTime(t.time)} ${t.location ? '· 📍 ' + t.location : ''}
               </div>
             </div>
             <div style="color: var(--granata); font-size: 20px;">›</div>
@@ -238,11 +237,11 @@ const AttendancePage = {
       if (status === 'presente') {
         el.innerHTML = ' · <span style="color: var(--success); font-weight: 600;">✅ Confermato</span>';
       } else if (status === 'assente') {
-        el.innerHTML = ' · <span style="color: var(--danger); font-weight: 600;">❌ Assente</span>';
+        el.innerHTML = ' · <span style="color: var(--danger); font-weight: 600;"> Assente</span>';
       } else if (status === 'giustificato') {
         el.innerHTML = ' · <span style="color: var(--warning); font-weight: 600;">⚠️ Giustificato</span>';
       } else {
-        el.innerHTML = ' · <span style="color: var(--gray-500);">⏳ Da confermare</span>';
+        el.innerHTML = ' · <span style="color: var(--gray-500);"> Da confermare</span>';
       }
     });
   },
@@ -318,14 +317,14 @@ const AttendancePage = {
       const roleEmoji = {
         'portiere': '🧤',
         'difensore': '🛡️',
-        'centrocampista': '',
-        'attaccante': ''
+        'centrocampista': '⚡',
+        'attaccante': '🎯'
       };
       
       let html = '';
       players.forEach(p => {
         const status = statusMap[p.id] || 'assente';
-        const emoji = roleEmoji[p.role] || '';
+        const emoji = roleEmoji[p.role] || '⚽';
         const editable = canEdit || this.isMister;
         
         html += `
@@ -338,9 +337,9 @@ const AttendancePage = {
               <button class="att-btn ${status === 'presente' ? 'active-presente' : ''}" 
                       data-status="presente" ${!editable ? 'disabled' : ''}>✅</button>
               <button class="att-btn ${status === 'assente' ? 'active-assente' : ''}" 
-                      data-status="assente" ${!editable ? 'disabled' : ''}>❌</button>
+                      data-status="assente" ${!editable ? 'disabled' : ''}></button>
               <button class="att-btn ${status === 'giustificato' ? 'active-giustificato' : ''}" 
-                      data-status="giustificato" ${!editable ? 'disabled' : ''}>️</button>
+                      data-status="giustificato" ${!editable ? 'disabled' : ''}>⚠️</button>
             </div>
           </div>
         `;
