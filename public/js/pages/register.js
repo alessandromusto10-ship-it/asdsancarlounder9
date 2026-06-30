@@ -10,8 +10,8 @@ const RegisterPage = {
 
           <!-- Tab ruolo -->
           <div class="role-tabs">
-            <button class="role-tab active" data-role="mister"> Mister</button>
-            <button class="role-tab" data-role="genitore">👨👩‍👦 Genitore</button>
+            <button class="role-tab active" data-role="mister">⚽ Mister</button>
+            <button class="role-tab" data-role="genitore">‍👩‍👦 Genitore</button>
           </div>
 
           <form id="register-form">
@@ -43,7 +43,7 @@ const RegisterPage = {
                   <div class="spinner" style="width:20px;height:20px;margin:8px auto;"></div>
                 </div>
                 <small style="color: var(--gray-500); display:block; margin-top:6px;">
-                  📌 Se non vedi il nome di tuo figlio, contatta il mister.
+                   Se non vedi il nome, contatta il mister.
                 </small>
               </div>
             </div>
@@ -80,17 +80,17 @@ const RegisterPage = {
       }
     };
 
-    // Carica giocatori senza genitore
+    // Carica giocatori con ALMENO UNO SLOT LIBERO
     const loadPlayers = async () => {
       playerLoading.classList.remove('hidden');
       playerSelect.innerHTML = '<option value="">-- Seleziona --</option>';
       
       try {
-        // ✅ MODIFICA: Seleziono solo id, first_name, last_name (niente role)
+        // Query: prendi giocatori dove parent_id È NULL oppure parent_id_2 È NULL
         const { data, error } = await db
           .from('players')
           .select('id, first_name, last_name')
-          .is('parent_id', null)
+          .or('parent_id.is.null,parent_id_2.is.null')
           .order('last_name')
           .order('first_name');
         
@@ -102,7 +102,6 @@ const RegisterPage = {
           data.forEach(p => {
             const opt = document.createElement('option');
             opt.value = p.id;
-            // ✅ MODIFICA: Mostro solo Cognome e Nome, senza ruolo
             opt.textContent = `${p.last_name} ${p.first_name}`;
             playerSelect.appendChild(opt);
           });
