@@ -46,7 +46,7 @@
     <!-- Bottom nav (solo per utenti loggati) -->
     <nav id="bottom-nav" class="bottom-nav hidden"></nav>
 
-    <!-- Bottom Sheet per Gestione (solo mister) -->
+    <!-- Bottom Sheet per Gestione (solo mister) - ORIZZONTALE -->
     <div id="bottom-sheet-overlay" class="bottom-sheet-overlay"></div>
     <div id="bottom-sheet" class="bottom-sheet">
       <div class="bottom-sheet-handle"></div>
@@ -54,7 +54,9 @@
         <div class="bottom-sheet-title">⚙️ Gestione</div>
         <button id="bottom-sheet-close" class="bottom-sheet-close">✕</button>
       </div>
-      <div class="bottom-sheet-grid" id="bottom-sheet-content"></div>
+      <div class="bottom-sheet-scroll">
+        <div class="bottom-sheet-row" id="bottom-sheet-content"></div>
+      </div>
     </div>
 
     <!-- Install prompt -->
