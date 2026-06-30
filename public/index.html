@@ -17,7 +17,6 @@
   <script>
     (function() {
       const savedTheme = localStorage.getItem('theme');
-      // Se non c'è preferenza salvata, usa sempre il tema chiaro
       const theme = savedTheme || 'light';
       document.documentElement.setAttribute('data-theme', theme);
     })();
@@ -47,6 +46,17 @@
     <!-- Bottom nav (solo per utenti loggati) -->
     <nav id="bottom-nav" class="bottom-nav hidden"></nav>
 
+    <!-- Bottom Sheet per Gestione (solo mister) -->
+    <div id="bottom-sheet-overlay" class="bottom-sheet-overlay"></div>
+    <div id="bottom-sheet" class="bottom-sheet">
+      <div class="bottom-sheet-handle"></div>
+      <div class="bottom-sheet-header">
+        <div class="bottom-sheet-title">⚙️ Gestione</div>
+        <button id="bottom-sheet-close" class="bottom-sheet-close">✕</button>
+      </div>
+      <div class="bottom-sheet-grid" id="bottom-sheet-content"></div>
+    </div>
+
     <!-- Install prompt -->
     <div id="install-banner" class="install-banner hidden">
       <span>📲 Installa l'app sul tuo dispositivo</span>
@@ -60,7 +70,6 @@
 
   <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- jsPDF per export PDF -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.0/dist/jspdf.plugin.autotable.min.js"></script>
 
