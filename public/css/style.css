@@ -493,7 +493,7 @@ tr:nth-child(even) td { background: var(--gray-50); }
 .att-btn.active-assente { background: var(--danger); color: var(--white); border-color: var(--danger); }
 .att-btn.active-giustificato { background: var(--warning); color: var(--white); border-color: var(--warning); }
 
-/* ===== BOTTOM SHEET ORIZZONTALE ===== */
+/* ===== BOTTOM SHEET VERTICALE (Menu Gestione) ===== */
 .bottom-sheet-overlay {
   position: fixed;
   inset: 0;
@@ -520,6 +520,8 @@ tr:nth-child(even) td { background: var(--gray-50); }
   transform: translateY(100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  max-height: 70vh;
+  overflow-y: auto;
 }
 .bottom-sheet.show {
   transform: translateY(0);
@@ -568,59 +570,44 @@ tr:nth-child(even) td { background: var(--gray-50); }
   background: var(--gray-200);
 }
 
-/* Scroll orizzontale */
-.bottom-sheet-scroll {
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  padding-bottom: 8px;
-}
-.bottom-sheet-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.bottom-sheet-row {
+/* Layout verticale */
+.bottom-sheet-content {
   display: flex;
-  gap: 12px;
-  min-width: max-content;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .bottom-sheet-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 16px 20px;
+  gap: 12px;
+  padding: 14px 16px;
   background: var(--gray-50);
   border: 2px solid transparent;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
-  text-align: center;
-  min-width: 100px;
-  flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
 .bottom-sheet-item:hover {
   background: rgba(122, 31, 46, 0.05);
   border-color: var(--granata);
-  transform: translateY(-2px);
+  transform: translateX(4px);
 }
 .bottom-sheet-item:active {
-  transform: translateY(0) scale(0.95);
+  transform: translateX(4px) scale(0.98);
 }
 .bottom-sheet-item-icon {
-  font-size: 32px;
+  font-size: 24px;
+  width: 32px;
+  text-align: center;
 }
 .bottom-sheet-item-label {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--gray-900);
-  white-space: nowrap;
+  flex: 1;
 }
 
 /* Icona ingranaggio */
@@ -727,16 +714,16 @@ tr:nth-child(even) td { background: var(--gray-50); }
     font-size: 22px; 
   }
   
-  /* Bottom sheet compatta su mobile */
+  /* Bottom sheet verticale su mobile */
   .bottom-sheet-item {
-    min-width: 90px;
-    padding: 14px 16px;
+    padding: 12px 14px;
   }
   .bottom-sheet-item-icon { 
-    font-size: 28px; 
+    font-size: 22px;
+    width: 28px;
   }
   .bottom-sheet-item-label { 
-    font-size: 12px; 
+    font-size: 14px; 
   }
 }
 
@@ -750,13 +737,13 @@ tr:nth-child(even) td { background: var(--gray-50); }
     font-size: 20px;
   }
   .bottom-sheet-item {
-    min-width: 80px;
-    padding: 12px 14px;
+    padding: 10px 12px;
   }
   .bottom-sheet-item-icon {
-    font-size: 26px;
+    font-size: 20px;
+    width: 26px;
   }
   .bottom-sheet-item-label {
-    font-size: 11px;
+    font-size: 13px;
   }
 }
