@@ -1,8 +1,9 @@
 const HomePage = {
+  SANCARLO_TEAM_NAME: 'S. Carlo Milano',
+
   async render() {
     const view = document.getElementById('view');
     const { profile } = await Auth.getCurrentUser();
-    
     view.innerHTML = `
       <div class="card" style="background: linear-gradient(135deg, var(--granata), var(--granata-dark)); color: var(--white);">
         <h2 style="font-size: 20px; margin-bottom: 4px;">👋 Ciao ${profile.full_name}!</h2>
@@ -43,9 +44,9 @@ const HomePage = {
         .order('date', { ascending: true })
         .order('time', { ascending: true })
         .limit(1);
-      
+
       if (error) throw error;
-      
+
       if (!data || data.length === 0) {
         container.innerHTML = `
           <div class="card-title">🏃 Prossimo Allenamento</div>
@@ -55,7 +56,7 @@ const HomePage = {
         `;
         return;
       }
-      
+
       const t = data[0];
       const dateObj = new Date(t.date);
       const daysUntil = Math.ceil((dateObj - new Date()) / (1000 * 60 * 60 * 24));
@@ -63,7 +64,7 @@ const HomePage = {
       if (daysUntil === 0) countdown = '<span class="badge badge-warning">OGGI</span>';
       else if (daysUntil === 1) countdown = '<span class="badge badge-warning">DOMANI</span>';
       else countdown = `<span class="badge badge-granata">tra ${daysUntil} giorni</span>`;
-      
+
       container.innerHTML = `
         <div class="card-title">🏃 Prossimo Allenamento</div>
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -86,21 +87,37 @@ const HomePage = {
   async loadNextMatch() {
     const container = document.getElementById('widget-next-match');
     try {
+      // Trova l'ID della squadra S. Carlo Milano
+      const { data: teamData, error: tErr } = await db
+        .from('teams')
+        .select('id')
+        .eq('name', this.SANCARLO_TEAM_NAME)
+        .single();
+
+      if (tErr || !teamData) {
+        container.innerHTML = `
+          <div class="card-title"> Prossima Partita</div>
+          <p style="color: var(--gray-500); text-align: center; padding: 12px;">
+            Squadra non trovata
+          </p>
+        `;
+        return;
+      }
+
+      const sanCarloId = teamData.id;
       const today = new Date().toISOString().split('T')[0];
+
       const { data, error } = await db
         .from('matches')
-        .select(`
-          *,
-          home_team:teams!matches_home_team_id_fkey(name),
-          away_team:teams!matches_away_team_id_fkey(name)
-        `)
+        .select(`*, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`)
         .gte('match_date', today)
+        .or(`home_team_id.eq.${sanCarloId},away_team_id.eq.${sanCarloId}`)
         .order('match_date', { ascending: true })
         .order('match_time', { ascending: true })
         .limit(1);
-      
+
       if (error) throw error;
-      
+
       if (!data || data.length === 0) {
         container.innerHTML = `
           <div class="card-title">⚽ Prossima Partita</div>
@@ -110,7 +127,7 @@ const HomePage = {
         `;
         return;
       }
-      
+
       const m = data[0];
       const dateObj = new Date(m.match_date);
       const daysUntil = Math.ceil((dateObj - new Date()) / (1000 * 60 * 60 * 24));
@@ -118,10 +135,10 @@ const HomePage = {
       if (daysUntil === 0) countdown = '<span class="badge badge-warning">OGGI</span>';
       else if (daysUntil === 1) countdown = '<span class="badge badge-warning">DOMANI</span>';
       else countdown = `<span class="badge badge-granata">tra ${daysUntil} giorni</span>`;
-      
+
       const homeName = m.home_team?.name || 'Casa';
       const awayName = m.away_team?.name || 'Ospite';
-      
+
       container.innerHTML = `
         <div class="card-title">⚽ Prossima Partita</div>
         <div style="text-align: center;">
@@ -135,7 +152,7 @@ const HomePage = {
           </div>
           <div style="color: var(--gray-700); font-size: 14px;">
             📅 ${dateObj.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long' })}
-            ${m.match_time ? ' · ⏰ ' + formatTime(m.match_time) : ''}
+            ${m.match_time ? ' ·  ' + formatTime(m.match_time) : ''}
           </div>
           ${m.location ? `<div style="color: var(--gray-500); font-size: 13px; margin-top: 4px;">📍 ${m.location}</div>` : ''}
           <div style="margin-top: 8px;">${countdown}</div>
@@ -149,37 +166,53 @@ const HomePage = {
   async loadLastResults() {
     const container = document.getElementById('widget-last-results');
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const { data, error } = await db
-        .from('matches')
-        .select(`
-          *,
-          home_team:teams!matches_home_team_id_fkey(name),
-          away_team:teams!matches_away_team_id_fkey(name)
-        `)
-        .lte('match_date', today)
-        .not('home_won_periods', 'is', null)
-        .order('match_date', { ascending: false })
-        .limit(3);
-      
-      if (error) throw error;
-      
-      if (!data || data.length === 0) {
+      // Trova l'ID della squadra S. Carlo Milano
+      const { data: teamData, error: tErr } = await db
+        .from('teams')
+        .select('id')
+        .eq('name', this.SANCARLO_TEAM_NAME)
+        .single();
+
+      if (tErr || !teamData) {
         container.innerHTML = `
           <div class="card-title">🏆 Ultimi Risultati</div>
+          <p style="color: var(--gray-500); text-align: center; padding: 12px;">
+            Squadra non trovata
+          </p>
+        `;
+        return;
+      }
+
+      const sanCarloId = teamData.id;
+      const today = new Date().toISOString().split('T')[0];
+
+      const { data, error } = await db
+        .from('matches')
+        .select(`*, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`)
+        .lte('match_date', today)
+        .not('home_won_periods', 'is', null)
+        .or(`home_team_id.eq.${sanCarloId},away_team_id.eq.${sanCarloId}`)
+        .order('match_date', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        container.innerHTML = `
+          <div class="card-title"> Ultimi Risultati</div>
           <p style="color: var(--gray-500); text-align: center; padding: 12px;">
             Nessun risultato disponibile
           </p>
         `;
         return;
       }
-      
+
       const resultsHtml = data.map(m => {
         const dateObj = new Date(m.match_date);
         const homeName = m.home_team?.name || 'Casa';
         const awayName = m.away_team?.name || 'Ospite';
         const score = `${m.home_won_periods ?? '-'} - ${m.away_won_periods ?? '-'}`;
-        
+
         return `
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--gray-200);">
             <div style="flex: 1;">
@@ -196,7 +229,7 @@ const HomePage = {
           </div>
         `;
       }).join('');
-      
+
       container.innerHTML = `
         <div class="card-title">🏆 Ultimi Risultati</div>
         ${resultsHtml}
