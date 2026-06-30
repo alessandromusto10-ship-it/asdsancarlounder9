@@ -121,21 +121,9 @@ Router.register('/attendance', () => AttendancePage.render());
 // --- Pagine solo mister ---
 Router.register('/trainings', () => TrainingsPage.render());
 Router.register('/results', () => ResultsPage.render());
+Router.register('/roster', () => RosterPage.render());
 
 // Placeholder per le prossime pagine (le implementeremo nei prossimi step)
-Router.register('/roster', async () => {
-  document.getElementById('view').innerHTML = `
-    <div class="card text-center" style="margin-top:20px;">
-      <h2 style="color: var(--granata);">👥 Gestione Rosa</h2>
-      <p style="margin:12px 0; color: var(--gray-500);">
-        Prossimamente...<br>
-        <small>Potrai aggiungere giocatori con nome, cognome, data di nascita e ruolo.</small>
-      </p>
-      <button class="btn btn-primary" onclick="Router.navigate('/')">Torna alla Home</button>
-    </div>
-  `;
-});
-
 Router.register('/championship', async () => {
   document.getElementById('view').innerHTML = `
     <div class="card text-center" style="margin-top:20px;">
