@@ -24,13 +24,13 @@ function $$(sel) { return document.querySelectorAll(sel); }
 function initTheme() {
   const savedTheme = localStorage.getItem('theme');
   
+  // Se c'è una preferenza salvata, usala
   if (savedTheme) {
     document.documentElement.setAttribute('data-theme', savedTheme);
   } else {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const defaultTheme = prefersDark ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', defaultTheme);
-    localStorage.setItem('theme', defaultTheme);
+    // Altrimenti, default sempre chiaro
+    document.documentElement.setAttribute('data-theme', 'light');
+    localStorage.setItem('theme', 'light');
   }
   
   updateThemeIcon();
