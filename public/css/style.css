@@ -41,7 +41,7 @@
 }
 
 /* ✅ FIX: aggiunto * mancante (causava blocco CSS su iOS) */
-* { 
+ *{ 
   box-sizing: border-box; 
   margin: 0; 
   padding: 0; 
