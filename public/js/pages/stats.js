@@ -2,6 +2,7 @@ const StatsPage = {
   periodFilter: 'month',
   customFrom: null,
   customTo: null,
+  statsData: null,
 
   async render() {
     const view = document.getElementById('view');
@@ -15,7 +16,7 @@ const StatsPage = {
 
       <!-- Filtri Periodo -->
       <div class="card">
-        <div class="card-title">🔍 Filtra per Periodo</div>
+        <div class="card-title"> Filtra per Periodo</div>
         <div class="role-tabs" style="margin-bottom: 12px;">
           <button class="role-tab active" data-period="month">Mese</button>
           <button class="role-tab" data-period="3months">3 Mesi</button>
@@ -28,7 +29,7 @@ const StatsPage = {
             <input type="date" id="filter-from" class="form-control" />
           </div>
           <div class="form-group" style="margin-bottom: 0;">
-            <label>📅 A</label>
+            <label> A</label>
             <input type="date" id="filter-to" class="form-control" />
           </div>
         </div>
@@ -40,7 +41,7 @@ const StatsPage = {
         <div class="flex-between mb-4">
           <div class="card-title" style="margin-bottom: 0;">📋 Presenze Giocatori</div>
           <button id="btn-export-pdf" class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px;">
-            📄 Esporta PDF
+             Esporta PDF
           </button>
         </div>
         <div id="stats-table">
@@ -89,13 +90,13 @@ const StatsPage = {
     document.getElementById('filter-from').value = monthStart.toISOString().split('T')[0];
     document.getElementById('filter-to').value = today.toISOString().split('T')[0];
 
+    // Carica statistiche (sempre fresco dal DB)
     await this.loadStats();
   },
 
   getDateRange() {
     const today = new Date();
     let from, to;
-
     switch (this.periodFilter) {
       case 'month':
         from = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -126,7 +127,6 @@ const StatsPage = {
   async loadStats() {
     const globalContainer = document.getElementById('global-stats');
     const tableContainer = document.getElementById('stats-table');
-    
     globalContainer.innerHTML = '<div class="spinner" style="grid-column: 1 / -1;"></div>';
     tableContainer.innerHTML = '<div class="spinner"></div>';
 
@@ -148,7 +148,7 @@ const StatsPage = {
       if (totalTrainings === 0) {
         globalContainer.innerHTML = `
           <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: var(--gray-500);">
-            📭 Nessun allenamento nel periodo selezionato
+             Nessun allenamento nel periodo selezionato
           </div>
         `;
         tableContainer.innerHTML = `
@@ -322,7 +322,6 @@ const StatsPage = {
       toast('Nessun dato da esportare', 'error');
       return;
     }
-
     try {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -335,7 +334,7 @@ const StatsPage = {
       
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(20);
-      doc.setFont(undefined, 'bold');
+      doc.setFont(undefined, 'bold'); 
       doc.text('ASD San Carlo Milano', 105, 15, { align: 'center' });
       
       doc.setFontSize(14);
@@ -350,7 +349,7 @@ const StatsPage = {
       // Statistiche globali
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
+      doc.setFont(undefined, 'bold'); 
       doc.text('Statistiche Globali', 14, 50);
       
       doc.setFontSize(10);
@@ -377,7 +376,7 @@ const StatsPage = {
         startY: 85,
         head: [['Giocatore', 'Presenze', 'Assenze', 'Giust.', '%']],
         body: tableData,
-        theme: 'grid',
+        theme: 'grid', 
         headStyles: {
           fillColor: [122, 31, 46],
           textColor: [255, 255, 255],
