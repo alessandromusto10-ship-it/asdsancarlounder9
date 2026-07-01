@@ -65,7 +65,7 @@ const MatchesPage = {
       
       const today = new Date().toISOString().split('T')[0];
       
-      // Raggruppa per giornata (match_type + matchday)
+      // Raggruppa per giornata
       const groupedMatches = {};
       data.forEach(m => {
         const key = `${m.match_type}-${m.matchday}`;
@@ -79,7 +79,6 @@ const MatchesPage = {
         groupedMatches[key].matches.push(m);
       });
       
-      // Ordina le giornate (andata prima, poi ritorno, per numero giornata)
       const sortedKeys = Object.keys(groupedMatches).sort((a, b) => {
         const [typeA, dayA] = a.split('-');
         const [typeB, dayB] = b.split('-');
@@ -94,14 +93,12 @@ const MatchesPage = {
         const typeLabel = group.type === 'andata' ? 'Andata' : 'Ritorno';
         const typeIcon = group.type === 'andata' ? '🏁' : '🔄';
         
-        // Intestazione giornata
         html += `
           <h3 style="color: var(--granata); margin: 20px 0 12px; font-size: 16px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid var(--granata); padding-bottom: 6px;">
             ${typeIcon} ${group.matchday}ª Giornata ${typeLabel}
           </h3>
         `;
         
-        // UNA SOLA CARD per tutta la giornata
         html += `<div class="card" style="margin-bottom: 12px; padding: 12px;">`;
         
         group.matches.forEach((m, idx) => {
@@ -112,7 +109,6 @@ const MatchesPage = {
           const isPast = m.match_date < today;
           const score = hasResult ? `${m.home_won_periods} - ${m.away_won_periods}` : 'vs';
           
-          // Badge risultato
           let resultBadge = '';
           if (hasResult) {
             if (m.home_won_periods > m.away_won_periods) {
@@ -124,31 +120,25 @@ const MatchesPage = {
             }
           }
           
-          // Separatore tra partite (tranne la prima)
           if (idx > 0) {
             html += `<div style="border-top: 1px solid var(--gray-200); margin: 10px 0;"></div>`;
           }
           
-          // Layout: squadre a SINISTRA, data/ora a DESTRA
+          // ✅ LAYOUT VERTICALE: squadre sopra, data/ora sotto
           html += `
-            <div style="display: flex; justify-content: space-between; align-items: center; ${isPast && !hasResult ? 'opacity: 0.6;' : ''}">
-              <!-- SINISTRA: squadre e risultato -->
-              <div style="flex: 1; text-align: left; padding-right: 12px;">
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <span style="font-weight: 600; font-size: 14px;">${homeName}</span>
-                  <span style="font-size: 16px; font-weight: 700; color: var(--granata); min-width: 50px; text-align: center;">${score}</span>
-                  <span style="font-weight: 600; font-size: 14px;">${awayName}</span>
-                  ${resultBadge}
-                </div>
+            <div style="${isPast && !hasResult ? 'opacity: 0.6;' : ''}">
+              <!-- RIGA 1: Squadre -->
+              <div style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;">
+                <span style="font-weight: 600; font-size: 14px; flex: 1; text-align: right; min-width: 80px;">${homeName}</span>
+                <span style="font-size: 16px; font-weight: 700; color: var(--granata); min-width: 40px; text-align: center;">${score}</span>
+                <span style="font-weight: 600; font-size: 14px; flex: 1; text-align: left; min-width: 80px;">${awayName}</span>
+                ${resultBadge}
               </div>
-              
-              <!-- DESTRA: data e ora -->
-              <div style="flex: 0 0 auto; min-width: 110px; text-align: right;">
-                <div style="font-size: 12px; color: var(--gray-500);">
-                  📅 ${dateObj.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })}
-                </div>
-                ${m.match_time ? `<div style="font-size: 12px; color: var(--gray-500); margin-top: 2px;">⏰ ${formatTime(m.match_time)}</div>` : ''}
-                ${m.location ? `<div style="font-size: 11px; color: var(--gray-500); margin-top: 2px;">📍 ${m.location}</div>` : ''}
+              <!-- RIGA 2: Data, ora, luogo -->
+              <div style="text-align: center; font-size: 12px; color: var(--gray-500); display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
+                <span>📅 ${dateObj.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })}</span>
+                ${m.match_time ? `<span>⏰ ${formatTime(m.match_time)}</span>` : ''}
+                ${m.location ? `<span>📍 ${m.location}</span>` : ''}
               </div>
             </div>
           `;

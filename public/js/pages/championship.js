@@ -1,6 +1,6 @@
 const ChampionshipPage = {
   championshipId: null,
-  filterType: 'andata', // Default su "andata" invece di "all"
+  filterType: 'andata',
   SANCARLO_TEAM_NAME: 'S. Carlo Milano',
 
   async render() {
@@ -8,25 +8,23 @@ const ChampionshipPage = {
     view.innerHTML = `
       <h2 style="color: var(--granata); margin-bottom: 16px;">🏟️ Gestione Campionato</h2>
 
-      <!-- Info Campionato -->
       <div class="card">
         <div class="card-title">📋 Info Campionato</div>
         <form id="championship-form">
           <div class="form-group">
-            <label>🏆 Nome Campionato</label>
+            <label> Nome Campionato</label>
             <input type="text" id="champ-name" class="form-control" placeholder="Es: Campionato Under 9" required />
           </div>
           <div class="form-group">
             <label>📅 Stagione</label>
             <input type="text" id="champ-season" class="form-control" placeholder="Es: 2026/2027" />
           </div>
-          <button type="submit" class="btn btn-primary btn-block">💾 Salva Info</button>
+          <button type="submit" class="btn btn-primary btn-block"> Salva Info</button>
         </form>
       </div>
 
-      <!-- Squadre del Girone -->
       <div class="card">
-        <div class="card-title">👥 Squadre del Girone</div>
+        <div class="card-title"> Squadre del Girone</div>
         <form id="team-form" style="display: flex; gap: 8px; margin-bottom: 12px;">
           <input type="text" id="team-name" class="form-control" placeholder="Nome squadra" required style="flex: 1;" />
           <button type="submit" class="btn btn-primary">➕</button>
@@ -36,7 +34,6 @@ const ChampionshipPage = {
         </div>
       </div>
 
-      <!-- Aggiungi Partita (SENZA campo Risultato) -->
       <div class="card">
         <div class="card-title">⚽ Aggiungi Partita</div>
         <form id="match-form">
@@ -55,7 +52,7 @@ const ChampionshipPage = {
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="margin-bottom: 0;">
-              <label>📅 Data</label>
+              <label> Data</label>
               <input type="date" id="match-date" class="form-control" required />
             </div>
             <div class="form-group" style="margin-bottom: 0;">
@@ -85,7 +82,6 @@ const ChampionshipPage = {
         </form>
       </div>
 
-      <!-- Lista Partite (raggruppate per giornata, filtri solo Andata/Ritorno) -->
       <div class="card">
         <div class="card-title">📋 Lista Partite</div>
         <div class="role-tabs" style="margin-bottom: 12px;">
@@ -97,11 +93,10 @@ const ChampionshipPage = {
         </div>
       </div>
 
-      <!-- Modifica Partita -->
       <div id="edit-match-modal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
         <div class="card" style="max-width: 450px; width: 100%; max-height: 90vh; overflow-y: auto;">
           <div class="flex-between mb-4">
-            <h3 style="color: var(--granata);">✏️ Modifica Partita</h3>
+            <h3 style="color: var(--granata);">️ Modifica Partita</h3>
             <button class="icon-btn" id="close-edit-match" style="background: var(--gray-200); color: var(--gray-700);">✕</button>
           </div>
           <form id="edit-match-form">
@@ -114,14 +109,14 @@ const ChampionshipPage = {
               <div class="form-group" style="margin-bottom: 0;">
                 <label>🏷️ Tipo</label>
                 <select id="edit-match-type" class="form-control" required>
-                  <option value="andata">🏁 ANDATA</option>
+                  <option value="andata"> ANDATA</option>
                   <option value="ritorno">🔄 RITORNO</option>
                 </select>
               </div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
               <div class="form-group" style="margin-bottom: 0;">
-                <label> Data</label>
+                <label>📅 Data</label>
                 <input type="date" id="edit-match-date" class="form-control" required />
               </div>
               <div class="form-group" style="margin-bottom: 0;">
@@ -148,7 +143,7 @@ const ChampionshipPage = {
               </div>
             </div>
             <div class="form-group">
-              <label>📊 Risultato (lascia vuoto per rimuovere)</label>
+              <label> Risultato (lascia vuoto per rimuovere)</label>
               <div style="display: flex; align-items: center; gap: 8px;">
                 <input type="number" id="edit-match-home-score" class="form-control" min="0" max="3" style="text-align: center;" />
                 <span style="font-size: 20px; color: var(--gray-500);">-</span>
@@ -160,7 +155,6 @@ const ChampionshipPage = {
         </div>
       </div>
 
-      <!-- Reset Campionato -->
       <div class="card" style="border: 2px solid var(--danger);">
         <div class="card-title" style="color: var(--danger);">🗑️ Reset Campionato</div>
         <p style="font-size: 13px; color: var(--gray-700); margin-bottom: 12px;">
@@ -172,28 +166,23 @@ const ChampionshipPage = {
       </div>
     `;
 
-    // Carica campionato esistente o creane uno nuovo
     await this.loadOrCreateChampionship();
 
-    // Form campionato
     document.getElementById('championship-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       await this.saveChampionship();
     });
 
-    // Form squadra
     document.getElementById('team-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       await this.addTeam();
     });
 
-    // Form partita
     document.getElementById('match-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       await this.addMatch();
     });
 
-    // Filtri partite (solo Andata/Ritorno)
     document.querySelectorAll('[data-filter]').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
@@ -203,18 +192,15 @@ const ChampionshipPage = {
       });
     });
 
-    // Modale close
     document.getElementById('close-edit-match').addEventListener('click', () => {
       document.getElementById('edit-match-modal').classList.add('hidden');
     });
 
-    // Form modifica partita
     document.getElementById('edit-match-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       await this.updateMatch();
     });
 
-    // Reset campionato
     document.getElementById('btn-reset-camp').addEventListener('click', async () => {
       await this.resetChampionship();
     });
@@ -225,11 +211,7 @@ const ChampionshipPage = {
 
   async loadOrCreateChampionship() {
     try {
-      const { data, error } = await db
-        .from('championships')
-        .select('*')
-        .limit(1);
-      
+      const { data, error } = await db.from('championships').select('*').limit(1);
       if (error) throw error;
       
       if (data && data.length > 0) {
@@ -249,7 +231,6 @@ const ChampionshipPage = {
         document.getElementById('champ-season').value = newChamp.season;
         
         await this.createSanCarloTeam(newChamp.id);
-        
         toast('Campionato creato con S. Carlo Milano ✅', 'success');
       }
     } catch (err) {
@@ -264,7 +245,6 @@ const ChampionshipPage = {
         name: this.SANCARLO_TEAM_NAME
       });
       if (error) throw error;
-      console.log('✅ Squadra S. Carlo Milano creata automaticamente');
     } catch (err) {
       console.error('Errore creazione S. Carlo Milano:', err);
     }
@@ -279,11 +259,7 @@ const ChampionshipPage = {
     const season = document.getElementById('champ-season').value.trim();
 
     try {
-      const { error } = await db
-        .from('championships')
-        .update({ name, season })
-        .eq('id', this.championshipId);
-      
+      const { error } = await db.from('championships').update({ name, season }).eq('id', this.championshipId);
       if (error) throw error;
       toast('Campionato aggiornato! ✅', 'success');
     } catch (err) {
@@ -322,7 +298,6 @@ const ChampionshipPage = {
       }
       
       this.updateTeamSelects(data || []);
-      
     } catch (err) {
       container.innerHTML = `<p style="color: var(--danger);">Errore: ${err.message}</p>`;
     }
@@ -355,7 +330,6 @@ const ChampionshipPage = {
         championship_id: this.championshipId,
         name: name
       });
-      
       if (error) throw error;
       toast('Squadra aggiunta! ✅', 'success');
       document.getElementById('team-name').value = '';
@@ -446,7 +420,6 @@ const ChampionshipPage = {
         return;
       }
       
-      // Raggruppa per giornata (match_type + matchday)
       const groupedMatches = {};
       data.forEach(m => {
         const key = `${m.match_type}-${m.matchday}`;
@@ -460,7 +433,6 @@ const ChampionshipPage = {
         groupedMatches[key].matches.push(m);
       });
       
-      // Ordina le giornate
       const sortedKeys = Object.keys(groupedMatches).sort((a, b) => {
         const [typeA, dayA] = a.split('-');
         const [typeB, dayB] = b.split('-');
@@ -475,14 +447,12 @@ const ChampionshipPage = {
         const typeLabel = group.type === 'andata' ? 'Andata' : 'Ritorno';
         const typeIcon = group.type === 'andata' ? '🏁' : '🔄';
         
-        // Intestazione giornata
         html += `
           <h3 style="color: var(--granata); margin: 20px 0 12px; font-size: 16px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid var(--granata); padding-bottom: 6px;">
             ${typeIcon} ${group.matchday}ª Giornata ${typeLabel}
           </h3>
         `;
         
-        // UNA SOLA CARD per tutta la giornata
         html += `<div class="card" style="margin-bottom: 12px; padding: 12px;">`;
         
         group.matches.forEach((m, idx) => {
@@ -492,38 +462,32 @@ const ChampionshipPage = {
           const hasResult = m.home_won_periods !== null && m.away_won_periods !== null;
           const score = hasResult ? `${m.home_won_periods} - ${m.away_won_periods}` : '-';
           
-          // Separatore tra partite (tranne la prima)
           if (idx > 0) {
             html += `<div style="border-top: 1px solid var(--gray-200); margin: 10px 0;"></div>`;
           }
           
-          // Layout: squadre a SINISTRA, data/ora a DESTRA
+          // ✅ LAYOUT VERTICALE: squadre sopra, data/ora+pulsanti sotto
           html += `
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <!-- SINISTRA: squadre e risultato -->
-              <div style="flex: 1; text-align: left; padding-right: 12px;">
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <span style="font-weight: 600; font-size: 14px;">${homeName}</span>
-                  <span style="font-size: 16px; font-weight: 700; color: var(--granata); min-width: 50px; text-align: center; ${!hasResult ? 'opacity: 0.3;' : ''}">${score}</span>
-                  <span style="font-weight: 600; font-size: 14px;">${awayName}</span>
-                </div>
+            <div>
+              <!-- RIGA 1: Squadre -->
+              <div style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;">
+                <span style="font-weight: 600; font-size: 14px; flex: 1; text-align: right; min-width: 80px;">${homeName}</span>
+                <span style="font-size: 16px; font-weight: 700; color: var(--granata); min-width: 40px; text-align: center; ${!hasResult ? 'opacity: 0.3;' : ''}">${score}</span>
+                <span style="font-weight: 600; font-size: 14px; flex: 1; text-align: left; min-width: 80px;">${awayName}</span>
               </div>
-              
-              <!-- DESTRA: data e ora -->
-              <div style="flex: 0 0 auto; min-width: 110px; text-align: right;">
-                <div style="font-size: 12px; color: var(--gray-500);">
-                  📅 ${dateObj.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })}
+              <!-- RIGA 2: Data/ora + pulsanti -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                <div style="font-size: 12px; color: var(--gray-500); display: flex; gap: 8px; flex-wrap: wrap;">
+                  <span>📅 ${dateObj.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })}</span>
+                  ${m.match_time ? `<span>⏰ ${formatTime(m.match_time)}</span>` : ''}
+                  ${m.location ? `<span>📍 ${m.location}</span>` : ''}
                 </div>
-                ${m.match_time ? `<div style="font-size: 12px; color: var(--gray-500); margin-top: 2px;">⏰ ${formatTime(m.match_time)}</div>` : ''}
-                ${m.location ? `<div style="font-size: 11px; color: var(--gray-500); margin-top: 2px;">📍 ${m.location}</div>` : ''}
-              </div>
-              
-              <!-- Pulsanti modifica/elimina -->
-              <div style="display: flex; gap: 6px; margin-left: 12px;">
-                <button class="icon-btn" onclick="ChampionshipPage.openEditMatch('${m.id}')" 
-                       style="background: var(--granata); color: var(--white); width: 28px; height: 28px; font-size: 12px;">✏️</button>
-                <button class="icon-btn" onclick="ChampionshipPage.deleteMatch('${m.id}')" 
-                       style="background: var(--danger); color: var(--white); width: 28px; height: 28px; font-size: 12px;">️</button>
+                <div style="display: flex; gap: 6px;">
+                  <button class="icon-btn" onclick="ChampionshipPage.openEditMatch('${m.id}')" 
+                         style="background: var(--granata); color: var(--white); width: 28px; height: 28px; font-size: 12px; flex-shrink: 0;">✏️</button>
+                  <button class="icon-btn" onclick="ChampionshipPage.deleteMatch('${m.id}')" 
+                         style="background: var(--danger); color: var(--white); width: 28px; height: 28px; font-size: 12px; flex-shrink: 0;">🗑️</button>
+                </div>
               </div>
             </div>
           `;
@@ -533,7 +497,6 @@ const ChampionshipPage = {
       });
       
       container.innerHTML = html;
-      
     } catch (err) {
       container.innerHTML = `<p style="color: var(--danger);">Errore: ${err.message}</p>`;
     }
@@ -541,12 +504,7 @@ const ChampionshipPage = {
 
   async openEditMatch(matchId) {
     try {
-      const { data: match, error } = await db
-        .from('matches')
-        .select('*')
-        .eq('id', matchId)
-        .single();
-      
+      const { data: match, error } = await db.from('matches').select('*').eq('id', matchId).single();
       if (error) throw error;
       if (!match) return;
       
@@ -601,7 +559,6 @@ const ChampionshipPage = {
     try {
       const { error } = await db.from('matches').update(data).eq('id', id);
       if (error) throw error;
-      
       toast('Partita aggiornata! ✅', 'success');
       document.getElementById('edit-match-modal').classList.add('hidden');
       await this.loadMatches();
@@ -623,14 +580,10 @@ const ChampionshipPage = {
   },
 
   async resetChampionship() {
-    if (!confirm('⚠️ ATTENZIONE: Questa azione eliminerà TUTTE le partite e TUTTE le squadre (tranne S. Carlo Milano). Continuare?')) return;
+    if (!confirm('️ ATTENZIONE: Questa azione eliminerà TUTTE le partite e TUTTE le squadre (tranne S. Carlo Milano). Continuare?')) return;
     if (!confirm('Sei davvero sicuro? Questa azione è IRREVERSIBILE.')) return;
     try {
-      const { error: mErr } = await db
-        .from('matches')
-        .delete()
-        .eq('championship_id', this.championshipId);
-      
+      const { error: mErr } = await db.from('matches').delete().eq('championship_id', this.championshipId);
       if (mErr) throw mErr;
       
       const { error: tErr } = await db

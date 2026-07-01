@@ -18,7 +18,7 @@ const ResultsPage = {
         <div class="spinner"></div>
       </div>
 
-      <!-- Modale inserimento risultato -->
+      <!-- Modale -->
       <div id="result-modal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
         <div class="card" style="max-width: 400px; width: 100%;">
           <div class="flex-between mb-4">
@@ -58,7 +58,6 @@ const ResultsPage = {
       document.getElementById('result-modal').classList.add('hidden');
     });
 
-    // Validazione somma
     const homeInput = document.getElementById('home-score');
     const awayInput = document.getElementById('away-score');
     const warning = document.getElementById('score-warning');
@@ -130,7 +129,7 @@ const ResultsPage = {
       
       const today = new Date().toISOString().split('T')[0];
       
-      // Raggruppa per giornata (match_type + matchday)
+      // Raggruppa per giornata
       const groupedMatches = {};
       matches.forEach(m => {
         const key = `${m.match_type}-${m.matchday}`;
@@ -144,7 +143,6 @@ const ResultsPage = {
         groupedMatches[key].matches.push(m);
       });
       
-      // Ordina le giornate (andata prima, poi ritorno, per numero giornata)
       const sortedKeys = Object.keys(groupedMatches).sort((a, b) => {
         const [typeA, dayA] = a.split('-');
         const [typeB, dayB] = b.split('-');
@@ -159,14 +157,12 @@ const ResultsPage = {
         const typeLabel = group.type === 'andata' ? 'Andata' : 'Ritorno';
         const typeIcon = group.type === 'andata' ? '🏁' : '🔄';
         
-        // Intestazione giornata
         html += `
           <h3 style="color: var(--granata); margin: 20px 0 12px; font-size: 16px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid var(--granata); padding-bottom: 6px;">
             ${typeIcon} ${group.matchday}ª Giornata ${typeLabel}
           </h3>
         `;
         
-        // UNA SOLA CARD per tutta la giornata
         html += `<div class="card" style="margin-bottom: 12px; padding: 12px;">`;
         
         group.matches.forEach((m, idx) => {
@@ -190,35 +186,28 @@ const ResultsPage = {
             }
           }
           
-          // Separatore tra partite (tranne la prima)
           if (idx > 0) {
             html += `<div style="border-top: 1px solid var(--gray-200); margin: 10px 0;"></div>`;
           }
           
-          // Layout: squadre a SINISTRA, data/ora a DESTRA
+          // ✅ LAYOUT VERTICALE
           html += `
-            <div style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; ${isPast && !hasResult ? 'opacity: 0.6;' : ''}" 
+            <div style="cursor: pointer; ${isPast && !hasResult ? 'opacity: 0.6;' : ''}" 
                 onclick="ResultsPage.openResultModal('${m.id}', '${homeName}', '${awayName}', ${m.home_won_periods || 0}, ${m.away_won_periods || 0}, ${hasResult})">
-              <!-- SINISTRA: squadre e risultato -->
-              <div style="flex: 1; text-align: left; padding-right: 12px;">
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <span style="font-weight: 600; font-size: 14px;">${homeName}</span>
-                  <span style="font-size: 16px; font-weight: 700; color: var(--granata); min-width: 50px; text-align: center; ${!hasResult ? 'opacity: 0.3;' : ''}">${scoreDisplay}</span>
-                  <span style="font-weight: 600; font-size: 14px;">${awayName}</span>
-                  ${resultBadge}
-                </div>
+              <!-- RIGA 1: Squadre -->
+              <div style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;">
+                <span style="font-weight: 600; font-size: 14px; flex: 1; text-align: right; min-width: 80px;">${homeName}</span>
+                <span style="font-size: 16px; font-weight: 700; color: var(--granata); min-width: 40px; text-align: center; ${!hasResult ? 'opacity: 0.3;' : ''}">${scoreDisplay}</span>
+                <span style="font-weight: 600; font-size: 14px; flex: 1; text-align: left; min-width: 80px;">${awayName}</span>
+                ${resultBadge}
               </div>
-              
-              <!-- DESTRA: data e ora -->
-              <div style="flex: 0 0 auto; min-width: 110px; text-align: right;">
-                <div style="font-size: 12px; color: var(--gray-500);">
-                  📅 ${dateObj.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })}
-                </div>
-                ${m.match_time ? `<div style="font-size: 12px; color: var(--gray-500); margin-top: 2px;">⏰ ${formatTime(m.match_time)}</div>` : ''}
+              <!-- RIGA 2: Data, ora -->
+              <div style="text-align: center; font-size: 12px; color: var(--gray-500); display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
+                <span>📅 ${dateObj.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })}</span>
+                ${m.match_time ? `<span>⏰ ${formatTime(m.match_time)}</span>` : ''}
               </div>
+              ${!hasResult ? `<div style="text-align: center; margin-top: 6px; font-size: 11px; color: var(--warning);">👆 Clicca per inserire risultato</div>` : ''}
             </div>
-            
-            ${!hasResult ? `<div style="text-align: center; margin-top: 8px; font-size: 11px; color: var(--warning);">👆 Clicca per inserire risultato</div>` : ''}
           `;
         });
         
