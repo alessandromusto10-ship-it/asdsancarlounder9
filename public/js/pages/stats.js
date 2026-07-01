@@ -4,27 +4,17 @@ const StatsPage = {
   customTo: null,
   statsData: null,
 
-  // Helper per formattare la data in YYYY-MM-DD in ora locale (evita problemi UTC)
-  _formatDateLocal(date) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  },
-
   async render() {
     const view = document.getElementById('view');
     view.innerHTML = `
       <h2 style="color: var(--granata); margin-bottom: 16px;">📊 Statistiche Presenze</h2>
 
-      <!-- Statistiche Globali -->
       <div id="global-stats" class="card" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;">
         <div class="spinner" style="grid-column: 1 / -1;"></div>
       </div>
 
-      <!-- Filtri Periodo -->
       <div class="card">
-        <div class="card-title"> Filtra per Periodo</div>
+        <div class="card-title">🔍 Filtra per Periodo</div>
         <div class="role-tabs" style="margin-bottom: 12px;">
           <button class="role-tab active" data-period="month">Mese</button>
           <button class="role-tab" data-period="3months">3 Mesi</button>
@@ -37,14 +27,13 @@ const StatsPage = {
             <input type="date" id="filter-from" class="form-control" />
           </div>
           <div class="form-group" style="margin-bottom: 0;">
-            <label> A</label>
+            <label>📅 A</label>
             <input type="date" id="filter-to" class="form-control" />
           </div>
         </div>
         <button id="btn-apply-filter" class="btn btn-primary btn-block mt-2">Applica Filtro</button>
       </div>
 
-      <!-- Tabella Presenze -->
       <div class="card">
         <div class="flex-between mb-4">
           <div class="card-title" style="margin-bottom: 0;">📋 Presenze Giocatori</div>
@@ -58,7 +47,6 @@ const StatsPage = {
       </div>
     `;
 
-    // Filtri periodo
     document.querySelectorAll('[data-period]').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('[data-period]').forEach(b => b.classList.remove('active'));
@@ -70,11 +58,11 @@ const StatsPage = {
           customDates.classList.remove('hidden');
         } else {
           customDates.classList.add('hidden');
+          this.loadStats();
         }
       });
     });
 
-    // Applica filtro
     document.getElementById('btn-apply-filter').addEventListener('click', () => {
       if (this.periodFilter === 'custom') {
         this.customFrom = document.getElementById('filter-from').value;
@@ -87,50 +75,45 @@ const StatsPage = {
       this.loadStats();
     });
 
-    // Export PDF
     document.getElementById('btn-export-pdf').addEventListener('click', () => {
       this.exportPDF();
     });
 
-    // Imposta date di default per filtro custom (ora locale)
     const today = new Date();
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    document.getElementById('filter-from').value = this._formatDateLocal(monthStart);
-    document.getElementById('filter-to').value = this._formatDateLocal(today);
+    document.getElementById('filter-from').value = monthStart.toISOString().split('T')[0];
+    document.getElementById('filter-to').value = today.toISOString().split('T')[0];
 
     await this.loadStats();
   },
 
   getDateRange() {
     const today = new Date();
+    let from, to;
     switch (this.periodFilter) {
       case 'month':
-        return {
-          from: this._formatDateLocal(new Date(today.getFullYear(), today.getMonth(), 1)),
-          to: this._formatDateLocal(today)
-        };
+        from = new Date(today.getFullYear(), today.getMonth(), 1);
+        to = today;
+        break;
       case '3months':
-        return {
-          from: this._formatDateLocal(new Date(today.getFullYear(), today.getMonth() - 3, 1)),
-          to: this._formatDateLocal(today)
-        };
+        from = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+        to = today;
+        break;
       case 'season':
         const year = today.getMonth() >= 8 ? today.getFullYear() : today.getFullYear() - 1;
-        return {
-          from: this._formatDateLocal(new Date(year, 8, 1)),
-          to: this._formatDateLocal(new Date(year + 1, 5, 30))
-        };
+        from = new Date(year, 8, 1);
+        to = new Date(year + 1, 5, 30);
+        break;
       case 'custom':
-        return {
-          from: this.customFrom,
-          to: this.customTo
-        };
-      default:
-        return {
-          from: this._formatDateLocal(today),
-          to: this._formatDateLocal(today)
-        };
+        from = new Date(this.customFrom);
+        to = new Date(this.customTo);
+        break;
     }
+
+    return {
+      from: from.toISOString().split('T')[0],
+      to: to.toISOString().split('T')[0]
+    };
   },
 
   async loadStats() {
@@ -246,7 +229,7 @@ const StatsPage = {
               <tr>
                 <th>Giocatore</th>
                 <th style="text-align: center; color: #4ade80;">✅</th>
-                <th style="text-align: center; color: #f87171;">❌</th>
+                <th style="text-align: center; color: #f87171;"></th>
                 <th style="text-align: center; color: #fbbf24;">⚠️</th>
                 <th style="text-align: center; width: 100px;">%</th>
               </tr>
