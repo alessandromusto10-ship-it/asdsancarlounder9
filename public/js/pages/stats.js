@@ -4,6 +4,14 @@ const StatsPage = {
   customTo: null,
   statsData: null,
 
+  // Helper per formattare la data in YYYY-MM-DD senza sfasamenti di fuso orario
+  _formatDateLocal(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  },
+
   async render() {
     const view = document.getElementById('view');
     view.innerHTML = `
@@ -16,7 +24,7 @@ const StatsPage = {
 
       <!-- Filtri Periodo -->
       <div class="card">
-        <div class="card-title"> Filtra per Periodo</div>
+        <div class="card-title">🔍 Filtra per Periodo</div>
         <div class="role-tabs" style="margin-bottom: 12px;">
           <button class="role-tab active" data-period="month">Mese</button>
           <button class="role-tab" data-period="3months">3 Mesi</button>
@@ -29,7 +37,7 @@ const StatsPage = {
             <input type="date" id="filter-from" class="form-control" />
           </div>
           <div class="form-group" style="margin-bottom: 0;">
-            <label> A</label>
+            <label>📅 A</label>
             <input type="date" id="filter-to" class="form-control" />
           </div>
         </div>
@@ -84,44 +92,48 @@ const StatsPage = {
       this.exportPDF();
     });
 
-    // Imposta date di default per filtro custom
+    // Imposta date di default per filtro custom (usando ora locale)
     const today = new Date();
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    document.getElementById('filter-from').value = monthStart.toISOString().split('T')[0];
-    document.getElementById('filter-to').value = today.toISOString().split('T')[0];
+    document.getElementById('filter-from').value = this._formatDateLocal(monthStart);
+    document.getElementById('filter-to').value = this._formatDateLocal(today);
 
-    // Carica statistiche (sempre fresco dal DB)
+    // Carica statistiche
     await this.loadStats();
   },
 
   getDateRange() {
     const today = new Date();
-    let from, to;
+    
     switch (this.periodFilter) {
       case 'month':
-        from = new Date(today.getFullYear(), today.getMonth(), 1);
-        to = today;
-        break;
+        return {
+          from: this._formatDateLocal(new Date(today.getFullYear(), today.getMonth(), 1)),
+          to: this._formatDateLocal(today)
+        };
       case '3months':
-        from = new Date(today.getFullYear(), today.getMonth() - 3, 1);
-        to = today;
-        break;
+        return {
+          from: this._formatDateLocal(new Date(today.getFullYear(), today.getMonth() - 3, 1)),
+          to: this._formatDateLocal(today)
+        };
       case 'season':
         // Stagione: settembre anno precedente - giugno anno corrente
         const year = today.getMonth() >= 8 ? today.getFullYear() : today.getFullYear() - 1;
-        from = new Date(year, 8, 1); // Settembre
-        to = new Date(year + 1, 5, 30); // Giugno
-        break;
+        return {
+          from: this._formatDateLocal(new Date(year, 8, 1)), // Settembre
+          to: this._formatDateLocal(new Date(year + 1, 5, 30)) // Giugno
+        };
       case 'custom':
-        from = new Date(this.customFrom);
-        to = new Date(this.customTo);
-        break;
+        return {
+          from: this.customFrom,
+          to: this.customTo
+        };
+      default:
+        return {
+          from: this._formatDateLocal(today),
+          to: this._formatDateLocal(today)
+        };
     }
-
-    return {
-      from: from.toISOString().split('T')[0],
-      to: to.toISOString().split('T')[0]
-    };
   },
 
   async loadStats() {
