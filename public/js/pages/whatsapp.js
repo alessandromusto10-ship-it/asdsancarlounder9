@@ -432,7 +432,7 @@ updatePreview() {
 
 ⚽ Partita: ${matchText}
 📅 Data: ${dateStr}  Inizio: ${cleanTime(kickoff)}
-⏰ Ritrovo: ${cleanTime(meeting)}
+⏰ Ritrovo PUNTUALI: ${cleanTime(meeting)}
 📍 Luogo: ${location || '[Da definire]'}
 🧦 Divisa: ${kit}
 
