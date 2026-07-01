@@ -56,7 +56,7 @@ const MatchesPage = {
         container.innerHTML = `
           <div class="card text-center">
             <p style="color: var(--gray-500); padding: 20px;">
-              📭 Nessuna partita ${filter !== 'all' ? 'di ' + filter : ''} in programma
+               Nessuna partita ${filter !== 'all' ? 'di ' + filter : ''} in programma
             </p>
           </div>
         `;
@@ -65,7 +65,7 @@ const MatchesPage = {
       
       const today = new Date().toISOString().split('T')[0];
       
-      // Raggruppa per giornata e tipo (andata/ritorno)
+      // ✅ Raggruppa per giornata (match_type + matchday)
       const groupedMatches = {};
       data.forEach(m => {
         const key = `${m.match_type}-${m.matchday}`;
@@ -79,7 +79,7 @@ const MatchesPage = {
         groupedMatches[key].matches.push(m);
       });
       
-      // Ordina le giornate
+      // Ordina le giornate (andata prima, poi ritorno, per numero giornata)
       const sortedKeys = Object.keys(groupedMatches).sort((a, b) => {
         const [typeA, dayA] = a.split('-');
         const [typeB, dayB] = b.split('-');
@@ -94,13 +94,17 @@ const MatchesPage = {
         const typeLabel = group.type === 'andata' ? 'Andata' : 'Ritorno';
         const typeIcon = group.type === 'andata' ? '🏁' : '🔄';
         
+        // Intestazione giornata (stessa grafica di prima)
         html += `
           <h3 style="color: var(--granata); margin: 20px 0 12px; font-size: 16px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid var(--granata); padding-bottom: 6px;">
             ${typeIcon} ${group.matchday}ª Giornata ${typeLabel}
           </h3>
         `;
         
-        group.matches.forEach(m => {
+        // ✅ UNA SOLA CARD per tutta la giornata
+        html += `<div class="card" style="margin-bottom: 12px; padding: 12px;">`;
+        
+        group.matches.forEach((m, idx) => {
           const dateObj = new Date(m.match_date);
           const homeName = m.home_team?.name || 'Casa';
           const awayName = m.away_team?.name || 'Ospite';
@@ -108,6 +112,7 @@ const MatchesPage = {
           const isPast = m.match_date < today;
           const score = hasResult ? `${m.home_won_periods} - ${m.away_won_periods}` : 'vs';
           
+          // Badge risultato (stessa grafica di prima)
           let resultBadge = '';
           if (hasResult) {
             if (m.home_won_periods > m.away_won_periods) {
@@ -119,27 +124,37 @@ const MatchesPage = {
             }
           }
           
+          // Separatore tra partite (tranne la prima)
+          if (idx > 0) {
+            html += `<div style="border-top: 1px solid var(--gray-200); margin: 10px 0;"></div>`;
+          }
+          
+          // ✅ Layout: data/ora a SINISTRA, squadre a DESTRA
           html += `
-            <div class="card" style="margin-bottom: 8px; ${isPast && !hasResult ? 'opacity: 0.6;' : ''}">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; ${isPast && !hasResult ? 'opacity: 0.6;' : ''}">
+              <!-- SINISTRA: data e ora -->
+              <div style="flex: 0 0 auto; min-width: 110px;">
                 <div style="font-size: 12px; color: var(--gray-500);">
-                  ${typeIcon} ${group.matchday}ª ${typeLabel}
+                   ${dateObj.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })}
                 </div>
-                ${resultBadge}
+                ${m.match_time ? `<div style="font-size: 12px; color: var(--gray-500); margin-top: 2px;">⏰ ${formatTime(m.match_time)}</div>` : ''}
+                ${m.location ? `<div style="font-size: 11px; color: var(--gray-500); margin-top: 2px;">📍 ${m.location}</div>` : ''}
               </div>
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="flex: 1; text-align: right; font-weight: 600; font-size: 14px;">${homeName}</div>
-                <div style="padding: 0 12px; font-size: 18px; font-weight: 700; color: var(--granata); min-width: 60px; text-align: center;">${score}</div>
-                <div style="flex: 1; text-align: left; font-weight: 600; font-size: 14px;">${awayName}</div>
-              </div>
-              <div style="text-align: center; margin-top: 8px; font-size: 12px; color: var(--gray-500);">
-                📅 ${dateObj.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })}
-                ${m.match_time ? ' · ⏰ ' + formatTime(m.match_time) : ''}
-                ${m.location ? ' · 📍 ' + m.location : ''}
+              
+              <!-- DESTRA: squadre e risultato -->
+              <div style="flex: 1; text-align: right; padding-left: 12px;">
+                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
+                  <span style="font-weight: 600; font-size: 14px;">${homeName}</span>
+                  <span style="font-size: 16px; font-weight: 700; color: var(--granata); min-width: 50px; text-align: center;">${score}</span>
+                  <span style="font-weight: 600; font-size: 14px;">${awayName}</span>
+                  ${resultBadge}
+                </div>
               </div>
             </div>
           `;
         });
+        
+        html += `</div>`;
       });
       
       container.innerHTML = html;
