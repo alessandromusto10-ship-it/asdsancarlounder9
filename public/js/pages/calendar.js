@@ -166,7 +166,7 @@ const CalendarPage = {
           <div class="card" style="background: rgba(122,31,46,0.05); border-left: 4px solid var(--granata); margin-bottom: 8px;">
             <div style="font-weight: 700; color: var(--granata);">🏃 Allenamento</div>
             <div style="margin-top: 6px; font-size: 14px;">
-               ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
+              📅 ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
               ⏰ ${formatTime(t.time)}<br>
               ${t.location ? '📍 ' + t.location + '<br>' : ''}
               ${t.notes ? '📝 ' + t.notes : ''}
@@ -184,7 +184,7 @@ const CalendarPage = {
         const dayName = dateObj.toLocaleDateString('it-IT', { weekday: 'long' });
         html += `
           <div class="card" style="background: rgba(245,158,11,0.08); border-left: 4px solid var(--warning); margin-bottom: 8px;">
-            <div style="font-weight: 700; color: var(--warning);">⚽ Partita · ${m.match_type === 'andata' ? 'Andata' : 'Ritorno'} G${m.matchday || '?'}</div>
+            <div style="font-weight: 700; color: var(--warning);"> Partita · ${m.match_type === 'andata' ? 'Andata' : 'Ritorno'} G${m.matchday || '?'}</div>
             <div style="margin-top: 6px; font-size: 14px;">
               📅 ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
               ⏰ ${m.match_time ? formatTime(m.match_time) : 'n.d.'}<br>
@@ -227,15 +227,15 @@ const CalendarPage = {
       const hasTraining = dayEvents.some(e => e.type === 'training');
       const hasMatch = dayEvents.some(e => e.type === 'match');
       
-      // ✅ FIX: font 7px e icone più visibili
+      // ✅ FIX: emoji ⚽ rimessa per le partite
       let eventText = '';
       if (hasTraining && hasMatch) {
         const training = dayEvents.find(e => e.type === 'training');
         const match = dayEvents.find(e => e.type === 'match');
         const opponent = this.getShortOpponent(match.data);
         eventText = `
-          <div style="font-size:7px; color:var(--granata); font-weight:700; line-height:1.15; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;"> ${formatTime(training.data.time)}</div>
-          <div style="font-size:7px; color:var(--warning); font-weight:700; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">⚽ vs ${opponent}</div>
+          <div style="font-size:7px; color:var(--granata); font-weight:700; line-height:1.15; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">🏃 ${formatTime(training.data.time)}</div>
+          <div style="font-size:7px; color:var(--warning); font-weight:700; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;"> vs ${opponent}</div>
         `;
       } else if (hasTraining) {
         const training = dayEvents.find(e => e.type === 'training');
@@ -243,7 +243,7 @@ const CalendarPage = {
       } else if (hasMatch) {
         const match = dayEvents.find(e => e.type === 'match');
         const opponent = this.getShortOpponent(match.data);
-        eventText = `<div style="font-size:7px; color:var(--warning); font-weight:700; line-height:1.15; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;"> vs ${opponent}</div>`;
+        eventText = `<div style="font-size:7px; color:var(--warning); font-weight:700; line-height:1.15; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">⚽ vs ${opponent}</div>`;
       }
       
       const isToday = dateStr === today ? ' today' : '';
@@ -284,7 +284,7 @@ const CalendarPage = {
           <div class="card" style="background: rgba(122,31,46,0.05); border-left: 4px solid var(--granata);">
             <div style="font-weight: 700; color: var(--granata);">🏃 Allenamento</div>
             <div style="margin-top: 6px; font-size: 14px;">
-               ${formatTime(t.time)}<br>
+              ⏰ ${formatTime(t.time)}<br>
               ${t.location ? '📍 ' + t.location + '<br>' : ''}
               ${t.notes ? '📝 ' + t.notes : ''}
             </div>
@@ -304,7 +304,7 @@ const CalendarPage = {
               <div style="font-size: 15px; font-weight: 600;">${homeName} ${score} ${awayName}</div>
               <div style="margin-top: 4px; font-size: 13px; color: var(--gray-700);">
                 ⏰ ${m.match_time ? formatTime(m.match_time) : 'n.d.'}
-                ${m.location ? ' ·  ' + m.location : ''}
+                ${m.location ? ' · 📍 ' + m.location : ''}
               </div>
             </div>
           </div>
