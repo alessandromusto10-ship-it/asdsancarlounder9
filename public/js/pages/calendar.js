@@ -49,7 +49,6 @@ const CalendarPage = {
       document.getElementById('day-modal').classList.add('hidden');
     });
 
-    // Prima carica l'ID di S. Carlo Milano, poi gli eventi
     await this.loadSanCarloId();
     await this.loadEvents();
     this.renderCalendar();
@@ -104,7 +103,7 @@ const CalendarPage = {
 
     if (matchesRes.data) {
       matchesRes.data.forEach(m => {
-        // ✅ FILTRO: solo partite di S. Carlo Milano
+        // FILTRO: solo partite di S. Carlo Milano
         if (this.sanCarloId && (m.home_team_id === this.sanCarloId || m.away_team_id === this.sanCarloId)) {
           this.events.push({
             date: m.match_date,
@@ -114,83 +113,6 @@ const CalendarPage = {
         }
       });
     }
-  },
-
-  renderCalendar() {
-    const year = this.currentDate.getFullYear();
-    const month = this.currentDate.getMonth();
-    const monthNames = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
-                        'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-    document.getElementById('month-title').textContent = `${monthNames[month]} ${year}`;
-
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startDayOfWeek = (firstDay.getDay() + 6) % 7;
-    const daysInMonth = lastDay.getDate();
-    const today = new Date().toISOString().split('T')[0];
-
-    const dayNames = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
-    let html = dayNames.map(d => `<div class="calendar-day-name">${d}</div>`).join('');
-
-    // Giorni del mese precedente
-    const prevMonthLastDay = new Date(year, month, 0).getDate();
-    for (let i = startDayOfWeek - 1; i >= 0; i--) {
-      const d = prevMonthLastDay - i;
-      html += `<div class="calendar-day other-month">${d}</div>`;
-    }
-
-    // Giorni del mese corrente
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const dayEvents = this.events.filter(e => e.date === dateStr);
-      const hasTraining = dayEvents.some(e => e.type === 'training');
-      const hasMatch = dayEvents.some(e => e.type === 'match');
-      
-      // ✅ TESTO al posto dei puntini (carattere aumentato a 9px)
-      let eventText = '';
-      if (hasTraining && hasMatch) {
-        const training = dayEvents.find(e => e.type === 'training');
-        const match = dayEvents.find(e => e.type === 'match');
-        const opponent = this.getShortOpponent(match.data);
-        eventText = `
-          <div style="font-size:9px; color:var(--granata); font-weight:600; line-height:1.2; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">🏃 ore ${formatTime(training.data.time)}</div>
-          <div style="font-size:9px; color:var(--warning); font-weight:600; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">⚽vs ${opponent} ore ${formatTime(match.data.match_time || '')}</div>
-        `;
-      } else if (hasTraining) {
-        const training = dayEvents.find(e => e.type === 'training');
-        eventText = `<div style="font-size:9px; color:var(--granata); font-weight:600; line-height:1.2; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;"> ore ${formatTime(training.data.time)}</div>`;
-      } else if (hasMatch) {
-        const match = dayEvents.find(e => e.type === 'match');
-        const opponent = this.getShortOpponent(match.data);
-        eventText = `<div style="font-size:9px; color:var(--warning); font-weight:600; line-height:1.2; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">⚽vs ${opponent} ore ${formatTime(match.data.match_time || '')}</div>`;
-      }
-      
-      const isToday = dateStr === today ? ' today' : '';
-      const hasEvent = dayEvents.length > 0 ? ' has-event' : '';
-      
-      html += `<div class="calendar-day${isToday}${hasEvent}" data-date="${dateStr}">${d}${eventText}</div>`;
-    }
-
-    // Giorni del mese successivo
-    const totalCells = startDayOfWeek + daysInMonth;
-    const remaining = (7 - (totalCells % 7)) % 7;
-    for (let d = 1; d <= remaining; d++) {
-      html += `<div class="calendar-day other-month">${d}</div>`;
-    }
-
-    const grid = document.getElementById('calendar-grid');
-    grid.innerHTML = html;
-
-    // Click su giorni
-    grid.querySelectorAll('.calendar-day:not(.other-month)').forEach(el => {
-      el.addEventListener('click', () => {
-        const dateStr = el.dataset.date;
-        const dayEvents = this.events.filter(e => e.date === dateStr);
-        if (dayEvents.length > 0) {
-          this.showDayModal(dateStr, dayEvents);
-        }
-      });
-    });
   },
 
   // Helper: nome corto dell'avversario
@@ -245,12 +167,12 @@ const CalendarPage = {
         const dayName = dateObj.toLocaleDateString('it-IT', { weekday: 'long' });
         html += `
           <div class="card" style="background: rgba(122,31,46,0.05); border-left: 4px solid var(--granata); margin-bottom: 8px;">
-            <div style="font-weight: 700; color: var(--granata);">🏃 Allenamento</div>
+            <div style="font-weight: 700; color: var(--granata);"> Allenamento</div>
             <div style="margin-top: 6px; font-size: 14px;">
               📅 ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
-              ⏰ ore ${formatTime(t.time)}<br>
+              ⏰ ${formatTime(t.time)}<br>
               ${t.location ? '📍 ' + t.location + '<br>' : ''}
-              ${t.notes ? '📝 ' + t.notes : ''}
+              ${t.notes ? ' ' + t.notes : ''}
             </div>
           </div>
         `;
@@ -268,8 +190,8 @@ const CalendarPage = {
             <div style="font-weight: 700; color: var(--warning);">⚽ Partita · ${m.match_type === 'andata' ? 'Andata' : 'Ritorno'} G${m.matchday || '?'}</div>
             <div style="margin-top: 6px; font-size: 14px;">
               📅 ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
-              ⏰ ore ${m.match_time ? formatTime(m.match_time) : 'n.d.'}<br>
-               ${homeName} ${score} ${awayName}<br>
+              ⏰ ${m.match_time ? formatTime(m.match_time) : 'n.d.'}<br>
+              🏠 ${homeName} ${score} ${awayName}<br>
               ${m.location ? '📍 ' + m.location : ''}
             </div>
           </div>
@@ -278,6 +200,83 @@ const CalendarPage = {
     });
 
     container.innerHTML = html;
+  },
+
+  renderCalendar() {
+    const year = this.currentDate.getFullYear();
+    const month = this.currentDate.getMonth();
+    const monthNames = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
+                        'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+    document.getElementById('month-title').textContent = `${monthNames[month]} ${year}`;
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDayOfWeek = (firstDay.getDay() + 6) % 7;
+    const daysInMonth = lastDay.getDate();
+    const today = new Date().toISOString().split('T')[0];
+
+    const dayNames = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+    let html = dayNames.map(d => `<div class="calendar-day-name">${d}</div>`).join('');
+
+    // Giorni del mese precedente
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const d = prevMonthLastDay - i;
+      html += `<div class="calendar-day other-month">${d}</div>`;
+    }
+
+    // Giorni del mese corrente
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dayEvents = this.events.filter(e => e.date === dateStr);
+      const hasTraining = dayEvents.some(e => e.type === 'training');
+      const hasMatch = dayEvents.some(e => e.type === 'match');
+      
+      // ✅ TESTO con font ridotto (6.5px) per non allargare le celle su mobile
+      let eventText = '';
+      if (hasTraining && hasMatch) {
+        const training = dayEvents.find(e => e.type === 'training');
+        const match = dayEvents.find(e => e.type === 'match');
+        const opponent = this.getShortOpponent(match.data);
+        eventText = `
+          <div style="font-size:6.5px; color:var(--granata); font-weight:600; line-height:1.1; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">🏃${formatTime(training.data.time)}</div>
+          <div style="font-size:6.5px; color:var(--warning); font-weight:600; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">⚽vs ${opponent}</div>
+        `;
+      } else if (hasTraining) {
+        const training = dayEvents.find(e => e.type === 'training');
+        eventText = `<div style="font-size:6.5px; color:var(--granata); font-weight:600; line-height:1.1; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">${formatTime(training.data.time)}</div>`;
+      } else if (hasMatch) {
+        const match = dayEvents.find(e => e.type === 'match');
+        const opponent = this.getShortOpponent(match.data);
+        eventText = `<div style="font-size:6.5px; color:var(--warning); font-weight:600; line-height:1.1; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">⚽vs ${opponent}</div>`;
+      }
+      
+      const isToday = dateStr === today ? ' today' : '';
+      const hasEvent = dayEvents.length > 0 ? ' has-event' : '';
+      
+      html += `<div class="calendar-day${isToday}${hasEvent}" data-date="${dateStr}">${d}${eventText}</div>`;
+    }
+
+    // Giorni del mese successivo
+    const totalCells = startDayOfWeek + daysInMonth;
+    const remaining = (7 - (totalCells % 7)) % 7;
+    for (let d = 1; d <= remaining; d++) {
+      html += `<div class="calendar-day other-month">${d}</div>`;
+    }
+
+    const grid = document.getElementById('calendar-grid');
+    grid.innerHTML = html;
+
+    // Click su giorni
+    grid.querySelectorAll('.calendar-day:not(.other-month)').forEach(el => {
+      el.addEventListener('click', () => {
+        const dateStr = el.dataset.date;
+        const dayEvents = this.events.filter(e => e.date === dateStr);
+        if (dayEvents.length > 0) {
+          this.showDayModal(dateStr, dayEvents);
+        }
+      });
+    });
   },
 
   showDayModal(dateStr, events) {
@@ -290,9 +289,9 @@ const CalendarPage = {
         const t = ev.data;
         html += `
           <div class="card" style="background: rgba(122,31,46,0.05); border-left: 4px solid var(--granata);">
-            <div style="font-weight: 700; color: var(--granata);">🏃 Allenamento</div>
+            <div style="font-weight: 700; color: var(--granata);"> Allenamento</div>
             <div style="margin-top: 6px; font-size: 14px;">
-              ⏰ ore ${formatTime(t.time)}<br>
+              ⏰ ${formatTime(t.time)}<br>
               ${t.location ? '📍 ' + t.location + '<br>' : ''}
               ${t.notes ? '📝 ' + t.notes : ''}
             </div>
@@ -311,7 +310,7 @@ const CalendarPage = {
             <div style="margin-top: 8px; text-align: center;">
               <div style="font-size: 15px; font-weight: 600;">${homeName} ${score} ${awayName}</div>
               <div style="margin-top: 4px; font-size: 13px; color: var(--gray-700);">
-                ⏰ ore ${m.match_time ? formatTime(m.match_time) : 'n.d.'}
+                ⏰ ${m.match_time ? formatTime(m.match_time) : 'n.d.'}
                 ${m.location ? ' · 📍 ' + m.location : ''}
               </div>
             </div>
