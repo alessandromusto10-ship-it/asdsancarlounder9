@@ -1,4 +1,6 @@
 const ResultsPage = {
+  currentMatchId: null,
+  
   async render() {
     const view = document.getElementById('view');
     view.innerHTML = `
@@ -6,8 +8,8 @@ const ResultsPage = {
       
       <div class="card" style="background: rgba(245,158,11,0.08); border-left: 4px solid var(--warning); margin-bottom: 16px;">
         <div style="font-size: 13px; color: var(--gray-700);">
-          💡 Clicca sul risultato per modificarlo.<br>
-          Tempi vinti: 0-3 per squadra, somma massima 3.<br>
+          💡 Clicca sul risultato per modificarlo. <br>
+          Tempi vinti: 0-3 per squadra, somma massima 3. <br>
           Risultati possibili: 3-0, 2-1, 1-1, 1-2, 0-3
         </div>
       </div>
@@ -61,7 +63,7 @@ const ResultsPage = {
     const awayInput = document.getElementById('away-score');
     const warning = document.getElementById('score-warning');
     const saveBtn = document.getElementById('btn-save-result');
-    
+
     const validateSum = () => {
       const sum = parseInt(homeInput.value || 0) + parseInt(awayInput.value || 0);
       if (sum > 3) {
@@ -72,7 +74,7 @@ const ResultsPage = {
         saveBtn.disabled = false;
       }
     };
-    
+
     homeInput.addEventListener('input', validateSum);
     awayInput.addEventListener('input', validateSum);
 
@@ -103,8 +105,6 @@ const ResultsPage = {
     await this.loadResults();
   },
 
-  currentMatchId: null,
-
   async loadResults() {
     const container = document.getElementById('results-list');
     
@@ -116,8 +116,10 @@ const ResultsPage = {
           home_team:teams!matches_home_team_id_fkey(name),
           away_team:teams!matches_away_team_id_fkey(name)
         `)
-        .order('match_date', { ascending: false })
-        .order('matchday', { ascending: false });
+        .order('match_type', { ascending: true })
+        .order('matchday', { ascending: true })
+        .order('match_date', { ascending: true })
+        .order('match_time', { ascending: true });
       
       if (error) throw error;
       
@@ -128,60 +130,99 @@ const ResultsPage = {
       
       const today = new Date().toISOString().split('T')[0];
       
-      let html = '';
-      let currentMonth = null;
-      
+      // Raggruppa per giornata (match_type + matchday)
+      const groupedMatches = {};
       matches.forEach(m => {
-        const dateObj = new Date(m.match_date);
-        const monthKey = `${dateObj.getFullYear()}-${dateObj.getMonth()}`;
-        
-        if (monthKey !== currentMonth) {
-          currentMonth = monthKey;
-          html += `<h3 style="color: var(--granata); margin: 16px 0 8px; font-size: 14px; text-transform: uppercase;">${dateObj.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })}</h3>`;
+        const key = `${m.match_type}-${m.matchday}`;
+        if (!groupedMatches[key]) {
+          groupedMatches[key] = {
+            type: m.match_type,
+            matchday: m.matchday,
+            matches: []
+          };
         }
+        groupedMatches[key].matches.push(m);
+      });
+      
+      // Ordina le giornate (andata prima, poi ritorno, per numero giornata)
+      const sortedKeys = Object.keys(groupedMatches).sort((a, b) => {
+        const [typeA, dayA] = a.split('-');
+        const [typeB, dayB] = b.split('-');
+        if (typeA !== typeB) return typeA === 'andata' ? -1 : 1;
+        return parseInt(dayA) - parseInt(dayB);
+      });
+      
+      let html = '';
+      
+      sortedKeys.forEach(key => {
+        const group = groupedMatches[key];
+        const typeLabel = group.type === 'andata' ? 'Andata' : 'Ritorno';
+        const typeIcon = group.type === 'andata' ? '🏁' : '🔄';
         
-        const homeName = m.home_team?.name || 'Casa';
-        const awayName = m.away_team?.name || 'Ospite';
-        const hasResult = m.home_won_periods !== null && m.away_won_periods !== null;
-        const isPast = m.match_date < today;
-        
-        let scoreDisplay = '-';
-        let resultBadge = '';
-        
-        if (hasResult) {
-          scoreDisplay = `${m.home_won_periods} - ${m.away_won_periods}`;
-          if (m.home_won_periods > m.away_won_periods) {
-            resultBadge = '<span class="badge badge-success">V</span>';
-          } else if (m.home_won_periods < m.away_won_periods) {
-            resultBadge = '<span class="badge badge-danger">S</span>';
-          } else {
-            resultBadge = '<span class="badge badge-warning">P</span>';
-          }
-        }
-        
+        // Intestazione giornata
         html += `
-          <div class="card" style="cursor: pointer; ${isPast && !hasResult ? 'opacity: 0.6;' : ''}" 
-               onclick="ResultsPage.openResultModal('${m.id}', '${homeName}', '${awayName}', ${m.home_won_periods || 0}, ${m.away_won_periods || 0}, ${hasResult})">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-              <div style="font-size: 12px; color: var(--gray-500);">
-                ${m.match_type === 'andata' ? '🏁' : '🔄'} Giornata ${m.matchday || '?'}
-              </div>
-              ${resultBadge}
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div style="flex: 1; text-align: right; font-weight: 600; font-size: 14px;">${homeName}</div>
-              <div style="padding: 0 12px; font-size: 18px; font-weight: 700; color: var(--granata); min-width: 60px; text-align: center; ${!hasResult ? 'opacity: 0.3;' : ''}">
-                ${scoreDisplay}
-              </div>
-              <div style="flex: 1; text-align: left; font-weight: 600; font-size: 14px;">${awayName}</div>
-            </div>
-            <div style="text-align: center; margin-top: 8px; font-size: 12px; color: var(--gray-500);">
-              📅 ${dateObj.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })}
-              ${m.match_time ? ' · ⏰ ' + formatTime(m.match_time) : ''}
-            </div>
-            ${!hasResult ? '<div style="text-align: center; margin-top: 8px; font-size: 11px; color: var(--warning);">👆 Clicca per inserire risultato</div>' : ''}
-          </div>
+          <h3 style="color: var(--granata); margin: 20px 0 12px; font-size: 16px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid var(--granata); padding-bottom: 6px;">
+            ${typeIcon} ${group.matchday}ª Giornata ${typeLabel}
+          </h3>
         `;
+        
+        // UNA SOLA CARD per tutta la giornata
+        html += `<div class="card" style="margin-bottom: 12px; padding: 12px;">`;
+        
+        group.matches.forEach((m, idx) => {
+          const dateObj = new Date(m.match_date);
+          const homeName = m.home_team?.name || 'Casa';
+          const awayName = m.away_team?.name || 'Ospite';
+          const hasResult = m.home_won_periods !== null && m.away_won_periods !== null;
+          const isPast = m.match_date < today;
+          
+          let scoreDisplay = '-';
+          let resultBadge = '';
+          
+          if (hasResult) {
+            scoreDisplay = `${m.home_won_periods} - ${m.away_won_periods}`;
+            if (m.home_won_periods > m.away_won_periods) {
+              resultBadge = '<span class="badge badge-success">V</span>';
+            } else if (m.home_won_periods < m.away_won_periods) {
+              resultBadge = '<span class="badge badge-danger">S</span>';
+            } else {
+              resultBadge = '<span class="badge badge-warning">P</span>';
+            }
+          }
+          
+          // Separatore tra partite (tranne la prima)
+          if (idx > 0) {
+            html += `<div style="border-top: 1px solid var(--gray-200); margin: 10px 0;"></div>`;
+          }
+          
+          // Layout: squadre a SINISTRA, data/ora a DESTRA
+          html += `
+            <div style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; ${isPast && !hasResult ? 'opacity: 0.6;' : ''}" 
+                onclick="ResultsPage.openResultModal('${m.id}', '${homeName}', '${awayName}', ${m.home_won_periods || 0}, ${m.away_won_periods || 0}, ${hasResult})">
+              <!-- SINISTRA: squadre e risultato -->
+              <div style="flex: 1; text-align: left; padding-right: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <span style="font-weight: 600; font-size: 14px;">${homeName}</span>
+                  <span style="font-size: 16px; font-weight: 700; color: var(--granata); min-width: 50px; text-align: center; ${!hasResult ? 'opacity: 0.3;' : ''}">${scoreDisplay}</span>
+                  <span style="font-weight: 600; font-size: 14px;">${awayName}</span>
+                  ${resultBadge}
+                </div>
+              </div>
+              
+              <!-- DESTRA: data e ora -->
+              <div style="flex: 0 0 auto; min-width: 110px; text-align: right;">
+                <div style="font-size: 12px; color: var(--gray-500);">
+                  📅 ${dateObj.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })}
+                </div>
+                ${m.match_time ? `<div style="font-size: 12px; color: var(--gray-500); margin-top: 2px;">⏰ ${formatTime(m.match_time)}</div>` : ''}
+              </div>
+            </div>
+            
+            ${!hasResult ? `<div style="text-align: center; margin-top: 8px; font-size: 11px; color: var(--warning);">👆 Clicca per inserire risultato</div>` : ''}
+          `;
+        });
+        
+        html += `</div>`;
       });
       
       container.innerHTML = html;
@@ -193,18 +234,17 @@ const ResultsPage = {
 
   openResultModal(matchId, homeName, awayName, homeScore, awayScore, hasResult) {
     this.currentMatchId = matchId;
-    
     document.getElementById('match-info').innerHTML = `
       <div style="font-size: 13px; color: var(--gray-500); margin-bottom: 4px;">
         ${homeName} vs ${awayName}
       </div>
     `;
-    
+
     document.getElementById('home-score').value = hasResult ? homeScore : 0;
     document.getElementById('away-score').value = hasResult ? awayScore : 0;
     document.getElementById('score-warning').classList.add('hidden');
     document.getElementById('btn-save-result').disabled = false;
-    
+
     document.getElementById('result-modal').classList.remove('hidden');
   },
 
@@ -216,12 +256,12 @@ const ResultsPage = {
       toast('La somma dei tempi vinti deve essere massimo 3', 'error');
       return;
     }
-    
+
     if (homeScore < 0 || homeScore > 3 || awayScore < 0 || awayScore > 3) {
       toast('I valori devono essere tra 0 e 3', 'error');
       return;
     }
-    
+
     try {
       const { error } = await db
         .from('matches')
