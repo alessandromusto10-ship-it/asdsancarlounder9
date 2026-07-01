@@ -34,9 +34,17 @@ const AttendancePage = {
     }
 
     view.innerHTML = `
-      <h2 style="color: var(--granata); margin-bottom: 16px;">
-        ${this.isMister ? ' Gestione Presenze' : '🏃 Conferma Presenza'}
-      </h2>
+      <!-- Header con pulsante Reset (solo mister) -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px;">
+        <h2 style="color: var(--granata); margin: 0; font-size: 20px;">
+          ${this.isMister ? '📝 Gestione Presenze' : '🏃 Conferma Presenza'}
+        </h2>
+        ${this.isMister ? `
+          <button id="btn-reset-week" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px; color: var(--danger); border-color: var(--danger); min-height: 32px;">
+            🔄 Reset Settimana
+          </button>
+        ` : ''}
+      </div>
 
       ${!this.isMister ? `
         <div class="card" style="background: rgba(122,31,46,0.05); border-left: 4px solid var(--granata);">
@@ -87,7 +95,58 @@ const AttendancePage = {
       this.currentTrainingId = null;
     });
 
+    // Pulsante Reset Settimana (solo mister)
+    if (this.isMister) {
+      document.getElementById('btn-reset-week').addEventListener('click', () => this.resetWeekAttendances());
+    }
+
     await this.loadTrainings();
+  },
+
+  // ===== NUOVA FUNZIONE: Reset presenze settimana corrente =====
+  async resetWeekAttendances() {
+    if (!confirm('⚠️ Sei sicuro di voler resettare tutte le presenze della settimana corrente?\n\nQuesta azione cancellerà tutte le conferme (presente/assente) per gli allenamenti di questa settimana. Le settimane passate non verranno toccate.')) {
+      return;
+    }
+    
+    try {
+      const { start, end } = this.getCurrentWeekBounds();
+      const startStr = start.toISOString().split('T')[0];
+      const endStr = end.toISOString().split('T')[0];
+      
+      // Trova gli allenamenti della settimana
+      const { data: trainings, error: tErr } = await db
+        .from('trainings')
+        .select('id')
+        .gte('date', startStr)
+        .lte('date', endStr);
+      
+      if (tErr) throw tErr;
+      if (!trainings || trainings.length === 0) {
+        toast('Nessun allenamento questa settimana', 'error');
+        return;
+      }
+      
+      const trainingIds = trainings.map(t => t.id);
+      
+      // Elimina le presenze associate
+      const { error: dErr } = await db
+        .from('attendances')
+        .delete()
+        .in('training_id', trainingIds);
+      
+      if (dErr) throw dErr;
+      
+      toast('Presenze della settimana resettate ✅', 'success');
+      
+      // Ricarica la vista
+      if (this.currentTrainingId) {
+        await this.openTraining(this.currentTrainingId);
+      }
+      await this.loadTrainings();
+    } catch (err) {
+      toast('Errore reset: ' + err.message, 'error');
+    }
   },
 
   async getChildName() {
@@ -131,7 +190,7 @@ const AttendancePage = {
                         'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
     document.getElementById('month-title').textContent = `${monthNames[month]} ${year}`;
     
-    // ✅ FIX: Calcola correttamente il primo e ultimo giorno del mese
+    // FIX: Calcola correttamente il primo e ultimo giorno del mese
     const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
     const lastDayOfMonth = new Date(year, month + 1, 0).getDate(); 
     const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`;
@@ -237,11 +296,11 @@ const AttendancePage = {
       if (status === 'presente') {
         el.innerHTML = ' · <span style="color: var(--success); font-weight: 600;">✅ Confermato</span>';
       } else if (status === 'assente') {
-        el.innerHTML = ' · <span style="color: var(--danger); font-weight: 600;"> Assente</span>';
+        el.innerHTML = ' · <span style="color: var(--danger); font-weight: 600;">❌ Assente</span>';
       } else if (status === 'giustificato') {
         el.innerHTML = ' · <span style="color: var(--warning); font-weight: 600;">⚠️ Giustificato</span>';
       } else {
-        el.innerHTML = ' · <span style="color: var(--gray-500);"> Da confermare</span>';
+        el.innerHTML = ' · <span style="color: var(--gray-500);">⏳ Da confermare</span>';
       }
     });
   },
@@ -266,7 +325,7 @@ const AttendancePage = {
     
     const dateObj = new Date(training.date);
     document.getElementById('detail-title').textContent = 
-      ` ${dateObj.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long' })}`;
+      `📅 ${dateObj.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long' })}`;
     document.getElementById('detail-subtitle').textContent = 
       `⏰ ${formatTime(training.time)}${training.location ? ' · 📍 ' + training.location : ''}`;
     
@@ -315,16 +374,16 @@ const AttendancePage = {
       }
       
       const roleEmoji = {
-        'portiere': '🧤',
+        'portiere': '',
         'difensore': '🛡️',
-        'centrocampista': '⚡',
-        'attaccante': '🎯'
+        'centrocampista': '',
+        'attaccante': ''
       };
       
       let html = '';
       players.forEach(p => {
         const status = statusMap[p.id] || 'assente';
-        const emoji = roleEmoji[p.role] || '⚽';
+        const emoji = roleEmoji[p.role] || '';
         const editable = canEdit || this.isMister;
         
         html += `
@@ -334,11 +393,11 @@ const AttendancePage = {
               ${p.role ? `<div style="font-size: 11px; color: var(--gray-500); text-transform: capitalize;">${p.role}</div>` : ''}
             </div>
             <div class="attendance-buttons">
-				<button class="att-btn ${status === 'presente' ? 'active-presente' : ''}" 
-				data-status="presente" ${!editable ? 'disabled' : ''}>✅</button>
-				<button class="att-btn ${status === 'assente' ? 'active-assente' : ''}" 
-				data-status="assente" ${!editable ? 'disabled' : ''}>❌</button>
-			</div>
+              <button class="att-btn ${status === 'presente' ? 'active-presente' : ''}" 
+                      data-status="presente" ${!editable ? 'disabled' : ''}>✅</button>
+              <button class="att-btn ${status === 'assente' ? 'active-assente' : ''}" 
+                      data-status="assente" ${!editable ? 'disabled' : ''}>❌</button>
+            </div>
           </div>
         `;
       });
@@ -365,7 +424,7 @@ const AttendancePage = {
   async setAttendance(trainingId, playerId, status, rowEl) {
     // Aggiorna UI immediatamente
     rowEl.querySelectorAll('.att-btn').forEach(b => {
-      b.classList.remove('active-presente', 'active-assente', 'active-giustificato');
+      b.classList.remove('active-presente', 'active-assente');
     });
     const activeBtn = rowEl.querySelector(`.att-btn[data-status="${status}"]`);
     activeBtn.classList.add(`active-${status}`);
@@ -396,8 +455,6 @@ const AttendancePage = {
             confEl.innerHTML = ' · <span style="color: var(--success); font-weight: 600;">✅ Confermato</span>';
           } else if (status === 'assente') {
             confEl.innerHTML = ' · <span style="color: var(--danger); font-weight: 600;">❌ Assente</span>';
-          } else {
-            confEl.innerHTML = ' · <span style="color: var(--warning); font-weight: 600;">⚠️ Giustificato</span>';
           }
         }
       }
