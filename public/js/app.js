@@ -101,13 +101,13 @@ function renderNav(role) {
   if (role === 'mister') {
     // Elementi dentro il menu Gestione
     const managementItems = [
-      { path: '/attendance', icon: '✅', label: 'Presenze' },
-      { path: '/roster', icon: '👥', label: 'Rosa' },
-      { path: '/championship', icon: '🏟️', label: 'Campionato' },
-      { path: '/trainings', icon: '🏃', label: 'Allenamenti' },
-      { path: '/results', icon: '📊', label: 'Risultati' },
-      { path: '/stats', icon: '📈', label: 'Statistiche' }
-    ];
+		{ path: '/attendance', icon: '✅', label: 'Presenze' },
+		{ path: '/results', icon: '📊', label: 'Risultati' },
+		{ path: '/trainings', icon: '🏃', label: 'Allenamenti' },
+		{ path: '/championship', icon: '🏟️', label: 'Campionato' },
+		{ path: '/roster', icon: '👥', label: 'Rosa' },
+		{ path: '/stats', icon: '📈', label: 'Statistiche' }
+	];
 
     // Renderizza contenuto bottom sheet
     const sheetContent = $('#bottom-sheet-content');
