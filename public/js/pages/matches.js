@@ -41,8 +41,9 @@ const MatchesPage = {
           home_team:teams!matches_home_team_id_fkey(name),
           away_team:teams!matches_away_team_id_fkey(name)
         `)
+        .order('matchday', { ascending: true })
         .order('match_date', { ascending: true })
-        .order('matchday', { ascending: true });
+        .order('match_time', { ascending: true });
       
       if (filter !== 'all') {
         query = query.eq('match_type', filter);
@@ -64,55 +65,81 @@ const MatchesPage = {
       
       const today = new Date().toISOString().split('T')[0];
       
-      let html = '';
-      let currentMonth = null;
-      
+      // Raggruppa per giornata e tipo (andata/ritorno)
+      const groupedMatches = {};
       data.forEach(m => {
-        const dateObj = new Date(m.match_date);
-        const monthKey = `${dateObj.getFullYear()}-${dateObj.getMonth()}`;
-        
-        if (monthKey !== currentMonth) {
-          currentMonth = monthKey;
-          html += `<h3 style="color: var(--granata); margin: 16px 0 8px; font-size: 14px; text-transform: uppercase;">${dateObj.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })}</h3>`;
+        const key = `${m.match_type}-${m.matchday}`;
+        if (!groupedMatches[key]) {
+          groupedMatches[key] = {
+            type: m.match_type,
+            matchday: m.matchday,
+            matches: []
+          };
         }
-        
-        const homeName = m.home_team?.name || 'Casa';
-        const awayName = m.away_team?.name || 'Ospite';
-        const hasResult = m.home_won_periods !== null && m.away_won_periods !== null;
-        const isPast = m.match_date < today;
-        const score = hasResult ? `${m.home_won_periods} - ${m.away_won_periods}` : 'vs';
-        
-        let resultBadge = '';
-        if (hasResult) {
-          if (m.home_won_periods > m.away_won_periods) {
-            resultBadge = '<span class="badge badge-success">V</span>';
-          } else if (m.home_won_periods < m.away_won_periods) {
-            resultBadge = '<span class="badge badge-danger">S</span>';
-          } else {
-            resultBadge = '<span class="badge badge-warning">P</span>';
-          }
-        }
+        groupedMatches[key].matches.push(m);
+      });
+      
+      // Ordina le giornate
+      const sortedKeys = Object.keys(groupedMatches).sort((a, b) => {
+        const [typeA, dayA] = a.split('-');
+        const [typeB, dayB] = b.split('-');
+        if (typeA !== typeB) return typeA === 'andata' ? -1 : 1;
+        return parseInt(dayA) - parseInt(dayB);
+      });
+      
+      let html = '';
+      
+      sortedKeys.forEach(key => {
+        const group = groupedMatches[key];
+        const typeLabel = group.type === 'andata' ? 'Andata' : 'Ritorno';
+        const typeIcon = group.type === 'andata' ? '🏁' : '🔄';
         
         html += `
-          <div class="card" style="${isPast && !hasResult ? 'opacity: 0.6;' : ''}">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-              <div style="font-size: 12px; color: var(--gray-500);">
-                ${m.match_type === 'andata' ? '🏁' : '🔄'} Giornata ${m.matchday || '?'}
-              </div>
-              ${resultBadge}
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div style="flex: 1; text-align: right; font-weight: 600; font-size: 14px;">${homeName}</div>
-              <div style="padding: 0 12px; font-size: 18px; font-weight: 700; color: var(--granata); min-width: 60px; text-align: center;">${score}</div>
-              <div style="flex: 1; text-align: left; font-weight: 600; font-size: 14px;">${awayName}</div>
-            </div>
-            <div style="text-align: center; margin-top: 8px; font-size: 12px; color: var(--gray-500);">
-              📅 ${dateObj.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })}
-              ${m.match_time ? ' · ⏰ ' + formatTime(m.match_time) : ''}
-              ${m.location ? ' · 📍 ' + m.location : ''}
-            </div>
-          </div>
+          <h3 style="color: var(--granata); margin: 20px 0 12px; font-size: 16px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid var(--granata); padding-bottom: 6px;">
+            ${typeIcon} ${group.matchday}ª Giornata ${typeLabel}
+          </h3>
         `;
+        
+        group.matches.forEach(m => {
+          const dateObj = new Date(m.match_date);
+          const homeName = m.home_team?.name || 'Casa';
+          const awayName = m.away_team?.name || 'Ospite';
+          const hasResult = m.home_won_periods !== null && m.away_won_periods !== null;
+          const isPast = m.match_date < today;
+          const score = hasResult ? `${m.home_won_periods} - ${m.away_won_periods}` : 'vs';
+          
+          let resultBadge = '';
+          if (hasResult) {
+            if (m.home_won_periods > m.away_won_periods) {
+              resultBadge = '<span class="badge badge-success">V</span>';
+            } else if (m.home_won_periods < m.away_won_periods) {
+              resultBadge = '<span class="badge badge-danger">S</span>';
+            } else {
+              resultBadge = '<span class="badge badge-warning">P</span>';
+            }
+          }
+          
+          html += `
+            <div class="card" style="margin-bottom: 8px; ${isPast && !hasResult ? 'opacity: 0.6;' : ''}">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <div style="font-size: 12px; color: var(--gray-500);">
+                  ${typeIcon} ${group.matchday}ª ${typeLabel}
+                </div>
+                ${resultBadge}
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="flex: 1; text-align: right; font-weight: 600; font-size: 14px;">${homeName}</div>
+                <div style="padding: 0 12px; font-size: 18px; font-weight: 700; color: var(--granata); min-width: 60px; text-align: center;">${score}</div>
+                <div style="flex: 1; text-align: left; font-weight: 600; font-size: 14px;">${awayName}</div>
+              </div>
+              <div style="text-align: center; margin-top: 8px; font-size: 12px; color: var(--gray-500);">
+                📅 ${dateObj.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })}
+                ${m.match_time ? ' · ⏰ ' + formatTime(m.match_time) : ''}
+                ${m.location ? ' · 📍 ' + m.location : ''}
+              </div>
+            </div>
+          `;
+        });
       });
       
       container.innerHTML = html;
