@@ -103,7 +103,6 @@ const CalendarPage = {
 
     if (matchesRes.data) {
       matchesRes.data.forEach(m => {
-        // FILTRO: solo partite di S. Carlo Milano
         if (this.sanCarloId && (m.home_team_id === this.sanCarloId || m.away_team_id === this.sanCarloId)) {
           this.events.push({
             date: m.match_date,
@@ -115,7 +114,6 @@ const CalendarPage = {
     }
   },
 
-  // Helper: nome corto dell'avversario
   getShortOpponent(matchData) {
     const isHome = matchData.home_team_id === this.sanCarloId;
     const opponent = isHome ? matchData.away_team?.name : matchData.home_team?.name;
@@ -124,7 +122,6 @@ const CalendarPage = {
     return parts.length > 1 ? parts[parts.length - 1] : opponent;
   },
 
-  // Helper: bounds della settimana corrente (lun-dom)
   getCurrentWeekBounds() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -167,12 +164,12 @@ const CalendarPage = {
         const dayName = dateObj.toLocaleDateString('it-IT', { weekday: 'long' });
         html += `
           <div class="card" style="background: rgba(122,31,46,0.05); border-left: 4px solid var(--granata); margin-bottom: 8px;">
-            <div style="font-weight: 700; color: var(--granata);"> Allenamento</div>
+            <div style="font-weight: 700; color: var(--granata);">🏃 Allenamento</div>
             <div style="margin-top: 6px; font-size: 14px;">
-              📅 ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
+               ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
               ⏰ ${formatTime(t.time)}<br>
               ${t.location ? '📍 ' + t.location + '<br>' : ''}
-              ${t.notes ? ' ' + t.notes : ''}
+              ${t.notes ? '📝 ' + t.notes : ''}
             </div>
           </div>
         `;
@@ -218,37 +215,35 @@ const CalendarPage = {
     const dayNames = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
     let html = dayNames.map(d => `<div class="calendar-day-name">${d}</div>`).join('');
 
-    // Giorni del mese precedente
     const prevMonthLastDay = new Date(year, month, 0).getDate();
     for (let i = startDayOfWeek - 1; i >= 0; i--) {
       const d = prevMonthLastDay - i;
       html += `<div class="calendar-day other-month">${d}</div>`;
     }
 
-    // Giorni del mese corrente
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const dayEvents = this.events.filter(e => e.date === dateStr);
       const hasTraining = dayEvents.some(e => e.type === 'training');
       const hasMatch = dayEvents.some(e => e.type === 'match');
       
-      // ✅ TESTO con font ridotto (6.5px) per non allargare le celle su mobile
+      // ✅ FIX: font 7px e icone più visibili
       let eventText = '';
       if (hasTraining && hasMatch) {
         const training = dayEvents.find(e => e.type === 'training');
         const match = dayEvents.find(e => e.type === 'match');
         const opponent = this.getShortOpponent(match.data);
         eventText = `
-          <div style="font-size:6.5px; color:var(--granata); font-weight:600; line-height:1.1; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">🏃${formatTime(training.data.time)}</div>
-          <div style="font-size:6.5px; color:var(--warning); font-weight:600; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">⚽vs ${opponent}</div>
+          <div style="font-size:7px; color:var(--granata); font-weight:700; line-height:1.15; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;"> ${formatTime(training.data.time)}</div>
+          <div style="font-size:7px; color:var(--warning); font-weight:700; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">⚽ vs ${opponent}</div>
         `;
       } else if (hasTraining) {
         const training = dayEvents.find(e => e.type === 'training');
-        eventText = `<div style="font-size:6.5px; color:var(--granata); font-weight:600; line-height:1.1; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">${formatTime(training.data.time)}</div>`;
+        eventText = `<div style="font-size:7px; color:var(--granata); font-weight:700; line-height:1.15; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">🏃 ${formatTime(training.data.time)}</div>`;
       } else if (hasMatch) {
         const match = dayEvents.find(e => e.type === 'match');
         const opponent = this.getShortOpponent(match.data);
-        eventText = `<div style="font-size:6.5px; color:var(--warning); font-weight:600; line-height:1.1; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;">⚽vs ${opponent}</div>`;
+        eventText = `<div style="font-size:7px; color:var(--warning); font-weight:700; line-height:1.15; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;"> vs ${opponent}</div>`;
       }
       
       const isToday = dateStr === today ? ' today' : '';
@@ -257,7 +252,6 @@ const CalendarPage = {
       html += `<div class="calendar-day${isToday}${hasEvent}" data-date="${dateStr}">${d}${eventText}</div>`;
     }
 
-    // Giorni del mese successivo
     const totalCells = startDayOfWeek + daysInMonth;
     const remaining = (7 - (totalCells % 7)) % 7;
     for (let d = 1; d <= remaining; d++) {
@@ -267,7 +261,6 @@ const CalendarPage = {
     const grid = document.getElementById('calendar-grid');
     grid.innerHTML = html;
 
-    // Click su giorni
     grid.querySelectorAll('.calendar-day:not(.other-month)').forEach(el => {
       el.addEventListener('click', () => {
         const dateStr = el.dataset.date;
@@ -289,9 +282,9 @@ const CalendarPage = {
         const t = ev.data;
         html += `
           <div class="card" style="background: rgba(122,31,46,0.05); border-left: 4px solid var(--granata);">
-            <div style="font-weight: 700; color: var(--granata);"> Allenamento</div>
+            <div style="font-weight: 700; color: var(--granata);">🏃 Allenamento</div>
             <div style="margin-top: 6px; font-size: 14px;">
-              ⏰ ${formatTime(t.time)}<br>
+               ${formatTime(t.time)}<br>
               ${t.location ? '📍 ' + t.location + '<br>' : ''}
               ${t.notes ? '📝 ' + t.notes : ''}
             </div>
@@ -306,12 +299,12 @@ const CalendarPage = {
           : 'vs';
         html += `
           <div class="card" style="background: rgba(245,158,11,0.08); border-left: 4px solid var(--warning);">
-            <div style="font-weight: 700; color: var(--warning);"> Partita · ${m.match_type === 'andata' ? 'Andata' : 'Ritorno'} G${m.matchday || '?'}</div>
+            <div style="font-weight: 700; color: var(--warning);">⚽ Partita · ${m.match_type === 'andata' ? 'Andata' : 'Ritorno'} G${m.matchday || '?'}</div>
             <div style="margin-top: 8px; text-align: center;">
               <div style="font-size: 15px; font-weight: 600;">${homeName} ${score} ${awayName}</div>
               <div style="margin-top: 4px; font-size: 13px; color: var(--gray-700);">
                 ⏰ ${m.match_time ? formatTime(m.match_time) : 'n.d.'}
-                ${m.location ? ' · 📍 ' + m.location : ''}
+                ${m.location ? ' ·  ' + m.location : ''}
               </div>
             </div>
           </div>
