@@ -34,60 +34,32 @@ const Auth = {
     
     console.log('✅ User creato:', data.user);
     
-    // Se è un genitore e ha selezionato un giocatore, collega al primo slot libero
+    // Se è un genitore e ha selezionato un giocatore, associa tramite RPC
     if (role === 'genitore' && playerId && data.user) {
       try {
-        console.log('🔗 Tentativo di collegamento giocatore:', playerId);
+        console.log('🔗 Tentativo di associazione giocatore:', playerId);
         
-        const { data: playerData, error: fetchError } = await db
-          .from('players')
-          .select('parent_id, parent_id_2')
-          .eq('id', playerId)
-          .single();
+        // Usa la funzione SQL che bypassa il RLS
+        const { data: result, error: rpcError } = await db
+          .rpc('associate_parent_to_player', {
+            p_player_id: playerId,
+            p_parent_id: data.user.id
+          });
         
-        if (fetchError) {
-          console.error(' Errore nel fetch del player:', fetchError);
-          throw fetchError;
-        }
-        
-        console.log('📊 Stato player:', playerData);
-        
-        let updateError = null;
-        
-        if (!playerData.parent_id) {
-          console.log('✅ Uso parent_id (slot 1)');
-          const { error } = await db
-            .from('players')
-            .update({ parent_id: data.user.id })
-            .eq('id', playerId);
-          updateError = error;
-        } else if (!playerData.parent_id_2) {
-          console.log('✅ Uso parent_id_2 (slot 2)');
-          const { error } = await db
-            .from('players')
-            .update({ parent_id_2: data.user.id })
-            .eq('id', playerId);
-          updateError = error;
+        if (rpcError) {
+          console.error('❌ Errore RPC associazione:', rpcError);
+          console.warn('⚠️ Associazione fallita, ma registrazione completata');
         } else {
-          console.error('❌ Entrambi gli slot occupati!');
-          throw new Error('Questo giocatore ha già due genitori associati');
+          console.log('✅ Associazione riuscita:', result);
         }
-        
-        if (updateError) {
-          console.error('❌ Errore nell\'update:', updateError);
-          throw updateError;
-        }
-        
-        console.log('✅ Collegamento riuscito!');
       } catch (err) {
-        console.error('❌ Errore nel collegamento genitore-figlio:', err);
+        console.error(' Errore nell\'associazione genitore-figlio:', err);
       }
     }
     
     return data;
   },
 
-  // ✅ NUOVA FUNZIONE: Login Google con whitelist mister
   async signInWithGoogle() {
     const { data, error } = await db.auth.signInWithOAuth({
       provider: 'google',
@@ -100,11 +72,10 @@ const Auth = {
     return data;
   },
 
-  // ✅ NUOVA FUNZIONE: Verifica e crea profilo mister da Google
   async ensureMisterProfile(user) {
     if (!user || !user.email) return null;
     
-    console.log(' Verifica mister per email:', user.email);
+    console.log('🔍 Verifica mister per email:', user.email);
     
     // 1. Controlla se l'email è nella whitelist
     const { data: misterEntry, error: mErr } = await db
