@@ -374,10 +374,10 @@ const AttendancePage = {
       }
       
       const roleEmoji = {
-        'portiere': '',
+        'portiere': '🧤',
         'difensore': '🛡️',
-        'centrocampista': '',
-        'attaccante': ''
+        'centrocampista': '⚡',
+        'attaccante': '🎯'
       };
       
       let html = '';
