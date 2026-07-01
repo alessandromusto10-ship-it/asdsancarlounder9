@@ -1,7 +1,7 @@
 const ChampionshipPage = {
   championshipId: null,
-  filterType: 'all',
-  SANCARLO_TEAM_NAME: 'S. Carlo Milano', // Nome fisso della squadra
+  filterType: 'andata', // Default su "andata" invece di "all"
+  SANCARLO_TEAM_NAME: 'S. Carlo Milano',
 
   async render() {
     const view = document.getElementById('view');
@@ -36,7 +36,7 @@ const ChampionshipPage = {
         </div>
       </div>
 
-      <!-- Aggiungi Partita -->
+      <!-- Aggiungi Partita (SENZA campo Risultato) -->
       <div class="card">
         <div class="card-title">⚽ Aggiungi Partita</div>
         <form id="match-form">
@@ -55,7 +55,7 @@ const ChampionshipPage = {
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="margin-bottom: 0;">
-              <label> Data</label>
+              <label>📅 Data</label>
               <input type="date" id="match-date" class="form-control" required />
             </div>
             <div class="form-group" style="margin-bottom: 0;">
@@ -81,27 +81,15 @@ const ChampionshipPage = {
               </select>
             </div>
           </div>
-          <div class="form-group">
-            <label>📊 Risultato (Tempi Vinti, es. 2-1)</label>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <input type="number" id="match-home-score" class="form-control" min="0" max="3" placeholder="0" style="text-align: center;" />
-              <span style="font-size: 20px; color: var(--gray-500);">-</span>
-              <input type="number" id="match-away-score" class="form-control" min="0" max="3" placeholder="0" style="text-align: center;" />
-            </div>
-            <small style="color: var(--gray-500); display: block; margin-top: 4px;">
-              💡 Lascia vuoto per salvare la partita senza risultato
-            </small>
-          </div>
           <button type="submit" class="btn btn-primary btn-block">💾 Salva Partita</button>
         </form>
       </div>
 
-      <!-- Lista Partite -->
+      <!-- Lista Partite (raggruppate per giornata, filtri solo Andata/Ritorno) -->
       <div class="card">
         <div class="card-title">📋 Lista Partite</div>
         <div class="role-tabs" style="margin-bottom: 12px;">
-          <button class="role-tab active" data-filter="all">Tutte</button>
-          <button class="role-tab" data-filter="andata">🏁 Andata</button>
+          <button class="role-tab active" data-filter="andata">🏁 Andata</button>
           <button class="role-tab" data-filter="ritorno">🔄 Ritorno</button>
         </div>
         <div id="matches-list">
@@ -120,7 +108,7 @@ const ChampionshipPage = {
             <input type="hidden" id="edit-match-id" />
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
               <div class="form-group" style="margin-bottom: 0;">
-                <label> Giornata</label>
+                <label>📅 Giornata</label>
                 <input type="number" id="edit-match-day" class="form-control" min="1" required />
               </div>
               <div class="form-group" style="margin-bottom: 0;">
@@ -133,7 +121,7 @@ const ChampionshipPage = {
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
               <div class="form-group" style="margin-bottom: 0;">
-                <label>📅 Data</label>
+                <label> Data</label>
                 <input type="date" id="edit-match-date" class="form-control" required />
               </div>
               <div class="form-group" style="margin-bottom: 0;">
@@ -147,7 +135,7 @@ const ChampionshipPage = {
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
               <div class="form-group" style="margin-bottom: 0;">
-                <label> Casa</label>
+                <label>🏠 Casa</label>
                 <select id="edit-match-home" class="form-control" required>
                   <option value="">-- Seleziona --</option>
                 </select>
@@ -167,7 +155,7 @@ const ChampionshipPage = {
                 <input type="number" id="edit-match-away-score" class="form-control" min="0" max="3" style="text-align: center;" />
               </div>
             </div>
-            <button type="submit" class="btn btn-primary btn-block"> Salva Modifiche</button>
+            <button type="submit" class="btn btn-primary btn-block">💾 Salva Modifiche</button>
           </form>
         </div>
       </div>
@@ -205,7 +193,7 @@ const ChampionshipPage = {
       await this.addMatch();
     });
 
-    // Filtri partite
+    // Filtri partite (solo Andata/Ritorno)
     document.querySelectorAll('[data-filter]').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
@@ -226,7 +214,7 @@ const ChampionshipPage = {
       await this.updateMatch();
     });
 
-    // Reset campionato (partite + squadre)
+    // Reset campionato
     document.getElementById('btn-reset-camp').addEventListener('click', async () => {
       await this.resetChampionship();
     });
@@ -249,7 +237,6 @@ const ChampionshipPage = {
         document.getElementById('champ-name').value = data[0].name;
         document.getElementById('champ-season').value = data[0].season || '2026/2027';
       } else {
-        // Crea campionato di default con stagione 2026/2027
         const { data: newChamp, error: cErr } = await db
           .from('championships')
           .insert({ name: 'Campionato Under 9', season: '2026/2027' })
@@ -261,7 +248,6 @@ const ChampionshipPage = {
         document.getElementById('champ-name').value = newChamp.name;
         document.getElementById('champ-season').value = newChamp.season;
         
-        // Crea automaticamente la squadra S. Carlo Milano
         await this.createSanCarloTeam(newChamp.id);
         
         toast('Campionato creato con S. Carlo Milano ✅', 'success');
@@ -277,7 +263,6 @@ const ChampionshipPage = {
         championship_id: championshipId,
         name: this.SANCARLO_TEAM_NAME
       });
-      
       if (error) throw error;
       console.log('✅ Squadra S. Carlo Milano creata automaticamente');
     } catch (err) {
@@ -290,10 +275,9 @@ const ChampionshipPage = {
       toast('Nessun campionato selezionato', 'error');
       return;
     }
-    
     const name = document.getElementById('champ-name').value.trim();
     const season = document.getElementById('champ-season').value.trim();
-    
+
     try {
       const { error } = await db
         .from('championships')
@@ -309,7 +293,6 @@ const ChampionshipPage = {
 
   async loadTeams() {
     const container = document.getElementById('teams-list');
-    
     try {
       const { data, error } = await db
         .from('teams')
@@ -331,14 +314,13 @@ const ChampionshipPage = {
               </div>
               ${!isSanCarlo ? `
                 <button class="icon-btn" onclick="ChampionshipPage.deleteTeam('${t.id}', '${t.name}')" 
-                        style="background: var(--danger); color: var(--white); width: 32px; height: 32px; font-size: 14px;">🗑️</button>
+                       style="background: var(--danger); color: var(--white); width: 32px; height: 32px; font-size: 14px;">🗑️</button>
               ` : '<span class="badge badge-granata">Squadra fissa</span>'}
             </div>
           `;
         }).join('');
       }
       
-      // Aggiorna menu a tendina partite
       this.updateTeamSelects(data || []);
       
     } catch (err) {
@@ -351,10 +333,9 @@ const ChampionshipPage = {
     const awaySelect = document.getElementById('match-away');
     const editHomeSelect = document.getElementById('edit-match-home');
     const editAwaySelect = document.getElementById('edit-match-away');
-    
     const options = '<option value="">-- Seleziona --</option>' + 
       teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-    
+
     homeSelect.innerHTML = options;
     awaySelect.innerHTML = options;
     editHomeSelect.innerHTML = options;
@@ -364,13 +345,11 @@ const ChampionshipPage = {
   async addTeam() {
     const name = document.getElementById('team-name').value.trim();
     if (!name) return;
-    
-    // Controlla che non sia già presente
     if (name.toLowerCase() === this.SANCARLO_TEAM_NAME.toLowerCase()) {
       toast('La squadra S. Carlo Milano è già presente', 'error');
       return;
     }
-    
+
     try {
       const { error } = await db.from('teams').insert({
         championship_id: this.championshipId,
@@ -388,7 +367,6 @@ const ChampionshipPage = {
 
   async deleteTeam(id, name) {
     if (!confirm(`Eliminare la squadra "${name}"?`)) return;
-    
     try {
       const { error } = await db.from('teams').delete().eq('id', id);
       if (error) throw error;
@@ -408,22 +386,12 @@ const ChampionshipPage = {
     const location = document.getElementById('match-location').value.trim() || null;
     const homeId = document.getElementById('match-home').value;
     const awayId = document.getElementById('match-away').value;
-    const homeScore = document.getElementById('match-home-score').value;
-    const awayScore = document.getElementById('match-away-score').value;
     
     if (homeId === awayId) {
       toast('Casa e Ospite devono essere diverse', 'error');
       return;
     }
-    
-    const homeScoreNum = homeScore !== '' ? parseInt(homeScore) : null;
-    const awayScoreNum = awayScore !== '' ? parseInt(awayScore) : null;
-    
-    if (homeScoreNum !== null && awayScoreNum !== null && homeScoreNum + awayScoreNum > 3) {
-      toast('La somma dei tempi vinti deve essere massimo 3', 'error');
-      return;
-    }
-    
+
     try {
       const { error } = await db.from('matches').insert({
         championship_id: this.championshipId,
@@ -435,8 +403,8 @@ const ChampionshipPage = {
         match_time: time,
         location: location,
         is_home: true,
-        home_won_periods: homeScoreNum,
-        away_won_periods: awayScoreNum
+        home_won_periods: null,
+        away_won_periods: null
       });
       
       if (error) throw error;
@@ -461,8 +429,10 @@ const ChampionshipPage = {
           away_team:teams!matches_away_team_id_fkey(name)
         `)
         .eq('championship_id', this.championshipId)
+        .order('match_type', { ascending: true })
+        .order('matchday', { ascending: true })
         .order('match_date', { ascending: true })
-        .order('matchday', { ascending: true });
+        .order('match_time', { ascending: true });
       
       if (this.filterType !== 'all') {
         query = query.eq('match_type', this.filterType);
@@ -476,39 +446,93 @@ const ChampionshipPage = {
         return;
       }
       
-      container.innerHTML = data.map(m => {
-        const dateObj = new Date(m.match_date);
-        const homeName = m.home_team?.name || 'Casa';
-        const awayName = m.away_team?.name || 'Ospite';
-        const hasResult = m.home_won_periods !== null && m.away_won_periods !== null;
-        const score = hasResult ? `${m.home_won_periods} - ${m.away_won_periods}` : '-';
+      // Raggruppa per giornata (match_type + matchday)
+      const groupedMatches = {};
+      data.forEach(m => {
+        const key = `${m.match_type}-${m.matchday}`;
+        if (!groupedMatches[key]) {
+          groupedMatches[key] = {
+            type: m.match_type,
+            matchday: m.matchday,
+            matches: []
+          };
+        }
+        groupedMatches[key].matches.push(m);
+      });
+      
+      // Ordina le giornate
+      const sortedKeys = Object.keys(groupedMatches).sort((a, b) => {
+        const [typeA, dayA] = a.split('-');
+        const [typeB, dayB] = b.split('-');
+        if (typeA !== typeB) return typeA === 'andata' ? -1 : 1;
+        return parseInt(dayA) - parseInt(dayB);
+      });
+      
+      let html = '';
+      
+      sortedKeys.forEach(key => {
+        const group = groupedMatches[key];
+        const typeLabel = group.type === 'andata' ? 'Andata' : 'Ritorno';
+        const typeIcon = group.type === 'andata' ? '🏁' : '🔄';
         
-        return `
-          <div class="card" style="margin-bottom: 8px; padding: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-              <div style="font-size: 12px; color: var(--gray-500);">
-                ${m.match_type === 'andata' ? '🏁' : '🔄'} Giornata ${m.matchday}
-              </div>
-              <div style="display: flex; gap: 6px;">
-                <button class="icon-btn" onclick="ChampionshipPage.openEditMatch('${m.id}')" 
-                        style="background: var(--granata); color: var(--white); width: 28px; height: 28px; font-size: 12px;">✏️</button>
-                <button class="icon-btn" onclick="ChampionshipPage.deleteMatch('${m.id}')" 
-                        style="background: var(--danger); color: var(--white); width: 28px; height: 28px; font-size: 12px;">🗑️</button>
-              </div>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div style="flex: 1; text-align: right; font-weight: 600; font-size: 13px;">${homeName}</div>
-              <div style="padding: 0 10px; font-size: 16px; font-weight: 700; color: var(--granata); min-width: 50px; text-align: center;">${score}</div>
-              <div style="flex: 1; text-align: left; font-weight: 600; font-size: 13px;">${awayName}</div>
-            </div>
-            <div style="text-align: center; margin-top: 6px; font-size: 11px; color: var(--gray-500);">
-              📅 ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}
-              ${m.match_time ? ' · ⏰ ' + formatTime(m.match_time) : ''}
-              ${m.location ? ' · 📍 ' + m.location : ''}
-            </div>
-          </div>
+        // Intestazione giornata
+        html += `
+          <h3 style="color: var(--granata); margin: 20px 0 12px; font-size: 16px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid var(--granata); padding-bottom: 6px;">
+            ${typeIcon} ${group.matchday}ª Giornata ${typeLabel}
+          </h3>
         `;
-      }).join('');
+        
+        // UNA SOLA CARD per tutta la giornata
+        html += `<div class="card" style="margin-bottom: 12px; padding: 12px;">`;
+        
+        group.matches.forEach((m, idx) => {
+          const dateObj = new Date(m.match_date);
+          const homeName = m.home_team?.name || 'Casa';
+          const awayName = m.away_team?.name || 'Ospite';
+          const hasResult = m.home_won_periods !== null && m.away_won_periods !== null;
+          const score = hasResult ? `${m.home_won_periods} - ${m.away_won_periods}` : '-';
+          
+          // Separatore tra partite (tranne la prima)
+          if (idx > 0) {
+            html += `<div style="border-top: 1px solid var(--gray-200); margin: 10px 0;"></div>`;
+          }
+          
+          // Layout: squadre a SINISTRA, data/ora a DESTRA
+          html += `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <!-- SINISTRA: squadre e risultato -->
+              <div style="flex: 1; text-align: left; padding-right: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <span style="font-weight: 600; font-size: 14px;">${homeName}</span>
+                  <span style="font-size: 16px; font-weight: 700; color: var(--granata); min-width: 50px; text-align: center; ${!hasResult ? 'opacity: 0.3;' : ''}">${score}</span>
+                  <span style="font-weight: 600; font-size: 14px;">${awayName}</span>
+                </div>
+              </div>
+              
+              <!-- DESTRA: data e ora -->
+              <div style="flex: 0 0 auto; min-width: 110px; text-align: right;">
+                <div style="font-size: 12px; color: var(--gray-500);">
+                  📅 ${dateObj.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })}
+                </div>
+                ${m.match_time ? `<div style="font-size: 12px; color: var(--gray-500); margin-top: 2px;">⏰ ${formatTime(m.match_time)}</div>` : ''}
+                ${m.location ? `<div style="font-size: 11px; color: var(--gray-500); margin-top: 2px;">📍 ${m.location}</div>` : ''}
+              </div>
+              
+              <!-- Pulsanti modifica/elimina -->
+              <div style="display: flex; gap: 6px; margin-left: 12px;">
+                <button class="icon-btn" onclick="ChampionshipPage.openEditMatch('${m.id}')" 
+                       style="background: var(--granata); color: var(--white); width: 28px; height: 28px; font-size: 12px;">✏️</button>
+                <button class="icon-btn" onclick="ChampionshipPage.deleteMatch('${m.id}')" 
+                       style="background: var(--danger); color: var(--white); width: 28px; height: 28px; font-size: 12px;">️</button>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += `</div>`;
+      });
+      
+      container.innerHTML = html;
       
     } catch (err) {
       container.innerHTML = `<p style="color: var(--danger);">Errore: ${err.message}</p>`;
@@ -547,22 +571,21 @@ const ChampionshipPage = {
     const id = document.getElementById('edit-match-id').value;
     const homeId = document.getElementById('edit-match-home').value;
     const awayId = document.getElementById('edit-match-away').value;
-    
     if (homeId === awayId) {
       toast('Casa e Ospite devono essere diverse', 'error');
       return;
     }
-    
+
     const homeScore = document.getElementById('edit-match-home-score').value;
     const awayScore = document.getElementById('edit-match-away-score').value;
     const homeScoreNum = homeScore !== '' ? parseInt(homeScore) : null;
     const awayScoreNum = awayScore !== '' ? parseInt(awayScore) : null;
-    
+
     if (homeScoreNum !== null && awayScoreNum !== null && homeScoreNum + awayScoreNum > 3) {
       toast('La somma dei tempi vinti deve essere massimo 3', 'error');
       return;
     }
-    
+
     const data = {
       matchday: parseInt(document.getElementById('edit-match-day').value),
       match_type: document.getElementById('edit-match-type').value,
@@ -574,7 +597,7 @@ const ChampionshipPage = {
       home_won_periods: homeScoreNum,
       away_won_periods: awayScoreNum
     };
-    
+
     try {
       const { error } = await db.from('matches').update(data).eq('id', id);
       if (error) throw error;
@@ -589,7 +612,6 @@ const ChampionshipPage = {
 
   async deleteMatch(matchId) {
     if (!confirm('Eliminare questa partita?')) return;
-    
     try {
       const { error } = await db.from('matches').delete().eq('id', matchId);
       if (error) throw error;
@@ -603,9 +625,7 @@ const ChampionshipPage = {
   async resetChampionship() {
     if (!confirm('⚠️ ATTENZIONE: Questa azione eliminerà TUTTE le partite e TUTTE le squadre (tranne S. Carlo Milano). Continuare?')) return;
     if (!confirm('Sei davvero sicuro? Questa azione è IRREVERSIBILE.')) return;
-    
     try {
-      // 1. Elimina tutte le partite
       const { error: mErr } = await db
         .from('matches')
         .delete()
@@ -613,7 +633,6 @@ const ChampionshipPage = {
       
       if (mErr) throw mErr;
       
-      // 2. Elimina tutte le squadre tranne S. Carlo Milano
       const { error: tErr } = await db
         .from('teams')
         .delete()
