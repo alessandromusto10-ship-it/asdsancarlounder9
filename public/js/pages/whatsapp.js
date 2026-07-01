@@ -2,17 +2,19 @@ const WhatsAppPage = {
   selectedPlayers: new Set(),
   selectedEquipment: new Set(),
   currentConvocationId: null,
+  sanCarloId: null,
+  SANCARLO_TEAM_NAME: 'S. Carlo Milano',
 
   // Lista attrezzatura con emoji
   EQUIPMENT_LIST: [
     { id: 'borraccia', label: 'Borraccia', emoji: '💧' },
     { id: 'pantaloncini', label: 'Pantaloncini ERREA', emoji: '🩳' },
     { id: 'parastinchi', label: 'Parastinchi', emoji: '🦵' },
-    { id: 'scarpe', label: 'Scarpe da calcio', emoji: '👟' },
-    { id: 'maglia', label: 'Maglia con numero', emoji: '👕' },
+    { id: 'scarpe', label: 'Scarpe da calcio', emoji: '' },
+    { id: 'maglia', label: 'Maglia con numero', emoji: '' },
     { id: 'calzettoni', label: 'Calzettoni', emoji: '🧦' },
     { id: 'tuta', label: 'Tuta di rappresentanza', emoji: '🏃‍♂️' },
-    { id: 'giaccone', label: 'Giaccone', emoji: '🧥' },
+    { id: 'giaccone', label: 'Giaccone', emoji: '' },
     { id: 'kway', label: 'Kway', emoji: '🌧️' }
   ],
 
@@ -20,7 +22,7 @@ const WhatsAppPage = {
     const view = document.getElementById('view');
     view.innerHTML = `
       <h2 style="color: var(--granata); margin-bottom: 16px;">📱 WhatsApp Convocazioni</h2>
-
+      
       <!-- Selezione Match & Dettagli -->
       <div class="card">
         <div class="card-title">🏟️ Dettagli Convocazione</div>
@@ -33,7 +35,7 @@ const WhatsAppPage = {
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="margin-bottom: 0;">
-              <label>📅 Data</label>
+              <label> Data</label>
               <input type="date" id="conv-date" class="form-control" />
             </div>
             <div class="form-group" style="margin-bottom: 0;">
@@ -91,7 +93,7 @@ const WhatsAppPage = {
 
       <!-- Anteprima & Azioni -->
       <div class="card">
-        <div class="card-title">📱 Anteprima Messaggio</div>
+        <div class="card-title"> Anteprima Messaggio</div>
         <textarea id="msg-preview" class="form-control" rows="12" readonly style="font-family: monospace; font-size: 13px; background: var(--gray-50);"></textarea>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;">
           <button id="btn-save-conv" class="btn btn-secondary">💾 Salva Bozza</button>
@@ -105,13 +107,13 @@ const WhatsAppPage = {
 
       <!-- Messaggi Rapidi -->
       <div class="card">
-        <div class="card-title">⚡ Messaggi Rapidi</div>
+        <div class="card-title"> Messaggi Rapidi</div>
         <div id="quick-msgs-list"></div>
       </div>
     `;
 
     // Event Listeners Dettagli
-    document.getElementById('conv-match').addEventListener('change', (e) => this.loadExistingConvocation(e.target.value));
+    document.getElementById('conv-match').addEventListener('change', (e) => this.onMatchSelected(e.target.value));
     document.getElementById('conv-date').addEventListener('input', () => this.updatePreview());
     document.getElementById('conv-location').addEventListener('input', () => this.updatePreview());
     document.getElementById('conv-meeting').addEventListener('input', () => this.updatePreview());
@@ -126,18 +128,150 @@ const WhatsAppPage = {
     // Event Listeners Convocati
     document.getElementById('btn-select-all').addEventListener('click', () => this.toggleAllPlayers(true));
     document.getElementById('btn-deselect-all').addEventListener('click', () => this.toggleAllPlayers(false));
-    
+
     // Azioni
     document.getElementById('btn-save-conv').addEventListener('click', () => this.saveConvocation());
     document.getElementById('btn-copy-msg').addEventListener('click', () => this.copyMessage());
     document.getElementById('btn-open-wa').addEventListener('click', () => this.openWhatsApp());
 
     // Caricamento iniziale
+    await this.loadSanCarloId();
     await this.loadMatches();
     await this.loadPlayers();
     this.renderEquipmentList();
     this.renderQuickMessages();
     this.updatePreview();
+  },
+
+  // ===== CARICA ID S. CARLO MILANO =====
+  async loadSanCarloId() {
+    try {
+      const { data, error } = await db
+        .from('teams')
+        .select('id')
+        .eq('name', this.SANCARLO_TEAM_NAME)
+        .single();
+      if (error) throw error;
+      this.sanCarloId = data?.id || null;
+    } catch (err) {
+      console.error('Errore caricamento ID S. Carlo:', err);
+      this.sanCarloId = null;
+    }
+  },
+
+  // ===== CALCOLA BOUNDS SETTIMANA CORRENTE (Lun-Dom) =====
+  getCurrentWeekBounds() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayOfWeek = today.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + mondayOffset);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+    return { start: monday, end: sunday };
+  },
+
+  // ===== CARICA SOLO PARTITE S. CARLO DELLA SETTIMANA =====
+  async loadMatches() {
+    const select = document.getElementById('conv-match');
+    try {
+      const { start, end } = this.getCurrentWeekBounds();
+      const startStr = start.toISOString().split('T')[0];
+      const endStr = end.toISOString().split('T')[0];
+
+      let query = db
+        .from('matches')
+        .select(`id, matchday, match_type, match_date, match_time, location, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`)
+        .gte('match_date', startStr)
+        .lte('match_date', endStr)
+        .order('match_date', { ascending: true })
+        .order('match_time', { ascending: true });
+
+      // Filtra solo partite di S. Carlo Milano
+      if (this.sanCarloId) {
+        query = query.or(`home_team_id.eq.${this.sanCarloId},away_team_id.eq.${this.sanCarloId}`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      let html = '<option value="">-- Seleziona partita --</option>';
+      if (data && data.length > 0) {
+        data.forEach(m => {
+          const date = new Date(m.match_date).toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' });
+          const typeLabel = m.match_type === 'andata' ? '🏁' : '';
+          const homeName = m.home_team?.name || '?';
+          const awayName = m.away_team?.name || '?';
+          const timeStr = m.match_time ? ` · ⏰ ${m.match_time}` : '';
+          html += `<option value="${m.id}" data-date="${m.match_date}" data-time="${m.match_time || ''}" data-location="${m.location || ''}" data-home="${homeName}" data-away="${awayName}">${typeLabel} G${m.matchday} · ${homeName} vs ${awayName} (${date}${timeStr})</option>`;
+        });
+      } else {
+        html = '<option value="">-- Nessuna partita questa settimana --</option>';
+      }
+      select.innerHTML = html;
+    } catch (err) {
+      toast('Errore caricamento partite: ' + err.message, 'error');
+    }
+  },
+
+  // ===== QUANDO SI SELEZIONA UNA PARTITA: AUTO-COMPILA I CAMPI =====
+  async onMatchSelected(matchId) {
+    // Reset campi
+    document.getElementById('conv-date').value = '';
+    document.getElementById('conv-location').value = '';
+    document.getElementById('conv-meeting').value = '';
+    document.getElementById('conv-kickoff').value = '';
+    this.currentConvocationId = null;
+
+    if (!matchId) {
+      this.updatePreview();
+      return;
+    }
+
+    const select = document.getElementById('conv-match');
+    const option = select.selectedOptions[0];
+    if (!option) return;
+
+    const matchDate = option.dataset.date;
+    const matchTime = option.dataset.time;
+    const matchLocation = option.dataset.location;
+
+    // Compila Data
+    if (matchDate) {
+      document.getElementById('conv-date').value = matchDate;
+    }
+
+    // Compila Luogo
+    if (matchLocation) {
+      document.getElementById('conv-location').value = matchLocation;
+    }
+
+    // Compila Orario Inizio
+    if (matchTime) {
+      document.getElementById('conv-kickoff').value = matchTime;
+
+      // Calcola Orario Ritrovo = Inizio - 30 minuti
+      const meetingTime = this.subtractMinutes(matchTime, 30);
+      document.getElementById('conv-meeting').value = meetingTime;
+    }
+
+    // Carica bozza precedente se esiste
+    await this.loadExistingConvocation(matchId);
+
+    this.updatePreview();
+  },
+
+  // ===== SOTTRAE MINUTI DA UN ORARIO HH:MM =====
+  subtractMinutes(timeStr, minutes) {
+    if (!timeStr) return '';
+    const [hours, mins] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, mins - minutes, 0, 0);
+    const h = String(date.getHours()).padStart(2, '0');
+    const m = String(date.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
   },
 
   // ===== RENDER LISTA ATTREZZATURA =====
@@ -150,7 +284,6 @@ const WhatsAppPage = {
         <span style="flex: 1; font-weight: 500; font-size: 14px;">${item.label}</span>
       </label>
     `).join('');
-
     container.querySelectorAll('.equip-cb').forEach(cb => {
       cb.addEventListener('change', () => {
         if (cb.checked) this.selectedEquipment.add(cb.value);
@@ -169,33 +302,6 @@ const WhatsAppPage = {
     this.updatePreview();
   },
 
-  async loadMatches() {
-    const select = document.getElementById('conv-match');
-    try {
-      const { data, error } = await db
-        .from('matches')
-        .select(`
-          id, matchday, match_type, match_date, 
-          home_team:teams!matches_home_team_id_fkey(name),
-          away_team:teams!matches_away_team_id_fkey(name)
-        `)
-        .gte('match_date', new Date().toISOString().split('T')[0])
-        .order('match_date', { ascending: true });
-      
-      if (error) throw error;
-      
-      let html = '<option value="">-- Seleziona partita --</option>';
-      data?.forEach(m => {
-        const date = new Date(m.match_date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
-        const typeLabel = m.match_type === 'andata' ? '🏁' : '🔄';
-        html += `<option value="${m.id}">${typeLabel} G${m.matchday} · ${m.home_team?.name || '?'} vs ${m.away_team?.name || '?'} (${date})</option>`;
-      });
-      select.innerHTML = html;
-    } catch (err) {
-      toast('Errore caricamento partite: ' + err.message, 'error');
-    }
-  },
-
   async loadPlayers() {
     const container = document.getElementById('conv-players-list');
     try {
@@ -204,11 +310,10 @@ const WhatsAppPage = {
         .select('id, first_name, last_name, role')
         .order('last_name')
         .order('first_name');
-      
       if (error) throw error;
-      
+
       this.selectedPlayers.clear();
-      
+
       container.innerHTML = data?.map(p => `
         <label style="display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-bottom: 1px solid var(--gray-200); cursor: pointer;">
           <input type="checkbox" class="player-cb" value="${p.id}" style="width: 18px; height: 18px; accent-color: var(--granata);" />
@@ -231,16 +336,7 @@ const WhatsAppPage = {
 
   async loadExistingConvocation(matchId) {
     if (!matchId) return;
-    
-    document.getElementById('conv-date').value = '';
-    document.getElementById('conv-location').value = '';
-    document.getElementById('conv-meeting').value = '';
-    document.getElementById('conv-kickoff').value = '';
-    document.getElementById('conv-notes').value = '';
-    this.selectedPlayers.clear();
-    this.selectedEquipment.clear();
-    this.currentConvocationId = null;
-    
+
     try {
       const { data, error } = await db
         .from('convocations')
@@ -250,37 +346,40 @@ const WhatsAppPage = {
         `)
         .eq('match_id', matchId)
         .limit(1);
-      
+
       if (error) throw error;
-      
+
       if (data && data.length > 0) {
         const conv = data[0];
         this.currentConvocationId = conv.id;
-        document.getElementById('conv-meeting').value = conv.meeting_time || '';
-        document.getElementById('conv-kit').value = conv.kit_info || 'Maglia granata, pantaloncini neri, calzettoni granata';
-        document.getElementById('conv-notes').value = conv.notes || '';
-        
+
+        // Sovrascrive solo se la bozza ha valori (non cancella l'auto-compilazione)
+        if (conv.meeting_time) document.getElementById('conv-meeting').value = conv.meeting_time;
+        if (conv.kit_info) document.getElementById('conv-kit').value = conv.kit_info;
+        if (conv.notes) document.getElementById('conv-notes').value = conv.notes;
+
         // Ripristina attrezzatura salvata
         if (conv.what_to_bring) {
           const savedEquip = conv.what_to_bring.split(',').filter(id => id.trim());
+          this.selectedEquipment.clear();
           savedEquip.forEach(id => this.selectedEquipment.add(id));
           document.querySelectorAll('.equip-cb').forEach(cb => {
             cb.checked = this.selectedEquipment.has(cb.value);
           });
         }
-        
+
         // Ripristina giocatori
+        this.selectedPlayers.clear();
         conv.players?.filter(p => p.selected).forEach(p => this.selectedPlayers.add(p.player_id));
         document.querySelectorAll('.player-cb').forEach(cb => {
           cb.checked = this.selectedPlayers.has(cb.value);
         });
-        
+
         toast('Bozza precedente caricata', 'success');
       }
     } catch (err) {
       console.error('Errore caricamento bozza:', err);
     }
-    this.updatePreview();
   },
 
   toggleAllPlayers(selectAll) {
@@ -300,10 +399,9 @@ const WhatsAppPage = {
     const kickoff = document.getElementById('conv-kickoff').value;
     const kit = document.getElementById('conv-kit').value;
     const notes = document.getElementById('conv-notes').value;
-
     const matchOption = document.getElementById('conv-match').selectedOptions[0];
     const matchText = matchId ? matchOption.textContent : '[Partita non selezionata]';
-    
+
     // Convocati uno sotto l'altro
     const selectedNames = Array.from(document.querySelectorAll('.player-cb:checked'))
       .map(cb => cb.parentElement.querySelector('span:nth-child(2)').textContent)
@@ -318,31 +416,24 @@ const WhatsAppPage = {
       .join('\n');
 
     const msg = `🏟️ *CONVOCAZIONE - ASD San Carlo Milano U9*
-
-⚽ *Partita:* ${matchText}
-📅 *Data:* ${date ? new Date(date).toLocaleDateString('it-IT') : '[Da definire]'}
-⏰ *Ritrovo:* ${meeting || '[--:--]'} | *Inizio:* ${kickoff || '[--:--]'}
-📍 *Luogo:* ${location || '[Da definire]'}
-
-🧦 *Divisa:* ${kit}
-
-🎒 *Da portare:*
+⚽ Partita: ${matchText}
+📅 Data: ${date ? new Date(date).toLocaleDateString('it-IT') : '[Da definire]'}
+⏰ Ritrovo: ${meeting || '[--:--]'} | Inizio: ${kickoff || '[--:--]'}
+📍 Luogo: ${location || '[Da definire]'}
+🧦 Divisa: ${kit}
+🎒 Da portare:
 ${selectedEquip || '[Nessun articolo selezionato]'}
-
-👇 *CONVOCATI:*
+👇 CONVOCATI:
 ${selectedNames || '[Nessun giocatore selezionato]'}
-
 ${notes ? `📝 *Note:* ${notes}\n` : ''}
-✅ *Si prega di confermare la presenza al più presto.*
+✅ Si prega di confermare la presenza al più presto.
 Grazie e buon calcio! ⚽`;
-
     document.getElementById('msg-preview').value = msg;
   },
 
   async saveConvocation() {
     const matchId = document.getElementById('conv-match').value;
     if (!matchId) return toast('Seleziona una partita', 'error');
-    
     const whatToBring = Array.from(this.selectedEquipment).join(',');
 
     const payload = {
@@ -357,7 +448,7 @@ Grazie e buon calcio! ⚽`;
       if (this.currentConvocationId) {
         const { error } = await db.from('convocations').update(payload).eq('id', this.currentConvocationId);
         if (error) throw error;
-        
+
         await db.from('convocation_players').delete().eq('convocation_id', this.currentConvocationId);
         const playerRows = Array.from(this.selectedPlayers).map(pid => ({
           convocation_id: this.currentConvocationId,
@@ -372,7 +463,7 @@ Grazie e buon calcio! ⚽`;
         const { data, error } = await db.from('convocations').insert(payload).select().single();
         if (error) throw error;
         this.currentConvocationId = data.id;
-        
+
         const playerRows = Array.from(this.selectedPlayers).map(pid => ({
           convocation_id: data.id,
           player_id: pid,
@@ -404,41 +495,37 @@ Grazie e buon calcio! ⚽`;
     }
   },
 
-  // ===== APRI WHATSAPP NORMALE (non Business) =====
   openWhatsApp() {
     const msg = document.getElementById('msg-preview').value;
     this.openWhatsAppWithMessage(msg);
   },
 
-  // ===== NUOVA FUNZIONE: Apre WhatsApp con messaggio personalizzato =====
   openWhatsAppWithMessage(msg) {
     const encodedMsg = encodeURIComponent(msg);
-    
     const isAndroid = /android/i.test(navigator.userAgent);
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    
+
     try {
       if (isAndroid) {
-        // Intent Android ESPlicito: forza WhatsApp normale (package: com.whatsapp)
         const intentUrl = `intent://send?text=${encodedMsg}#Intent;scheme=whatsapp;package=com.whatsapp;end`;
         window.location.href = intentUrl;
-        
+
         setTimeout(() => {
           if (confirm('WhatsApp non sembra installato. Aprire WhatsApp Web?')) {
             window.open(`https://web.whatsapp.com/send?text=${encodedMsg}`, '_blank');
           }
         }, 1500);
-        
+
       } else if (isIOS) {
         const waUrl = `whatsapp://send?text=${encodedMsg}`;
         window.location.href = waUrl;
-        
+
         setTimeout(() => {
           if (confirm('WhatsApp non sembra installato. Aprire WhatsApp Web?')) {
             window.open(`https://web.whatsapp.com/send?text=${encodedMsg}`, '_blank');
           }
         }, 1500);
-        
+
       } else {
         window.open(`https://web.whatsapp.com/send?text=${encodedMsg}`, '_blank');
       }
@@ -448,13 +535,12 @@ Grazie e buon calcio! ⚽`;
     }
   },
 
-  // ===== MESSAGGI RAPIDI AGGIORNATI =====
   quickMessages: [
     {
       label: '🏃‍♂️ Promemoria Allenamento',
       generator: () => {
         const date = document.getElementById('conv-date').value || '[data allenamento]';
-        return `🔔 *PROMEMORIA ALLENAMENTO*\n\nCiao a tutti! Ricordatevi di confermare la presenza per l'allenamento del ${date ? new Date(date).toLocaleDateString('it-IT') : '[data da definire]'}.\n\n📲 Conferma qui: https://under9.asdsancarlomilano.it\n\nGrazie! ⚽`;
+        return `🔔 *PROMEMORIA ALLENAMENTO*\n\nCiao a tutti! Ricordatevi di confermare la presenza per l'allenamento del ${date ? new Date(date).toLocaleDateString('it-IT') : '[data da definire]'}. \n\n Conferma qui: https://under9.asdsancarlomilano.it\n\nGrazie! ⚽`;
       }
     },
     {
@@ -462,24 +548,23 @@ Grazie e buon calcio! ⚽`;
       generator: () => {
         const match = document.getElementById('conv-match').selectedOptions[0]?.textContent || '[partita]';
         const time = document.getElementById('conv-meeting').value || '[ora]';
-        return `⚽ *RICORDO PARTITA*\n\nVi aspetto per ${match}!\n⏰ Ritrovo: ${time}\n\nPortate tutto il materiale e tanta grinta! 💪🤝`;
+        return `⚽ *RICORDO PARTITA*\n\nVi aspetto per ${match}!\n⏰ Ritrovo: ${time}\n\nPortate tutto il materiale e tanta grinta! 💪`;
       }
     },
     {
       label: '📢 Cambio Orario/Luogo',
       generator: () => {
-        return `📢 *AGGIORNAMENTO IMPORTANTE*\n\nL'allenamento/partita subisce una variazione.\n📍 Nuovo luogo: [Da comunicare]\n⏰ Nuovo orario: [Da comunicare]\n\nVi preghiamo di confermare la ricezione. Grazie! 🙏`;
+        return `📢 *AGGIORNAMENTO IMPORTANTE*\n\nL'allenamento/partita subisce una variazione.\n Nuovo luogo: [Da comunicare]\n Nuovo orario: [Da comunicare]\n\nVi preghiamo di confermare la ricezione. Grazie! 🙏`;
       }
     },
     {
       label: '🩺 Scadenza Certificati',
       generator: () => {
-        return `🩺 *SCADENZA CERTIFICATI MEDICI*\n\nAi genitori ricordiamo di controllare la scadenza del certificato medico e di consegnare il rinnovo prima della data indicata. È obbligatorio per partecipare agli allenamenti e alle partite.\n\nGrazie per la collaborazione! 📋✅`;
+        return `🩺 *SCADENZA CERTIFICATI MEDICI*\n\nAi genitori ricordiamo di controllare la scadenza del certificato medico e di consegnare il rinnovo prima della data indicata. È obbligatorio per partecipare agli allenamenti e alle partite.\n\nGrazie per la collaborazione! ✅`;
       }
     }
   ],
 
-  // ===== RENDER MESSAGGI RAPIDI CON DUE PULSANTI =====
   renderQuickMessages() {
     const container = document.getElementById('quick-msgs-list');
     container.innerHTML = this.quickMessages.map((qm, i) => `
@@ -487,12 +572,11 @@ Grazie e buon calcio! ⚽`;
         <span style="font-size: 14px; font-weight: 500; flex: 1; min-width: 0;">${qm.label}</span>
         <div style="display: flex; gap: 6px; flex-shrink: 0;">
           <button class="btn btn-secondary" data-copy-idx="${i}" style="font-size: 12px; padding: 6px 12px; min-height: 32px;">📋 Copia</button>
-          <button class="btn btn-primary" data-wa-idx="${i}" style="font-size: 12px; padding: 6px 12px; min-height: 32px;">📲 WhatsApp</button>
+          <button class="btn btn-primary" data-wa-idx="${i}" style="font-size: 12px; padding: 6px 12px; min-height: 32px;"> WhatsApp</button>
         </div>
       </div>
     `).join('');
 
-    // Pulsanti Copia
     container.querySelectorAll('button[data-copy-idx]').forEach(btn => {
       btn.addEventListener('click', () => {
         const msg = this.quickMessages[parseInt(btn.dataset.copyIdx)].generator();
@@ -500,7 +584,6 @@ Grazie e buon calcio! ⚽`;
       });
     });
 
-    // Pulsanti WhatsApp
     container.querySelectorAll('button[data-wa-idx]').forEach(btn => {
       btn.addEventListener('click', () => {
         const msg = this.quickMessages[parseInt(btn.dataset.waIdx)].generator();
