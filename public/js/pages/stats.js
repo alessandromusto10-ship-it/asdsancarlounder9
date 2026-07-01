@@ -4,7 +4,7 @@ const StatsPage = {
   customTo: null,
   statsData: null,
 
-  // Helper per formattare la data in YYYY-MM-DD senza sfasamenti di fuso orario
+  // Helper per formattare la data in YYYY-MM-DD in ora locale (evita problemi UTC)
   _formatDateLocal(date) {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -24,7 +24,7 @@ const StatsPage = {
 
       <!-- Filtri Periodo -->
       <div class="card">
-        <div class="card-title">🔍 Filtra per Periodo</div>
+        <div class="card-title"> Filtra per Periodo</div>
         <div class="role-tabs" style="margin-bottom: 12px;">
           <button class="role-tab active" data-period="month">Mese</button>
           <button class="role-tab" data-period="3months">3 Mesi</button>
@@ -37,7 +37,7 @@ const StatsPage = {
             <input type="date" id="filter-from" class="form-control" />
           </div>
           <div class="form-group" style="margin-bottom: 0;">
-            <label>📅 A</label>
+            <label> A</label>
             <input type="date" id="filter-to" class="form-control" />
           </div>
         </div>
@@ -49,7 +49,7 @@ const StatsPage = {
         <div class="flex-between mb-4">
           <div class="card-title" style="margin-bottom: 0;">📋 Presenze Giocatori</div>
           <button id="btn-export-pdf" class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px;">
-             Esporta PDF
+            📄 Esporta PDF
           </button>
         </div>
         <div id="stats-table">
@@ -92,19 +92,17 @@ const StatsPage = {
       this.exportPDF();
     });
 
-    // Imposta date di default per filtro custom (usando ora locale)
+    // Imposta date di default per filtro custom (ora locale)
     const today = new Date();
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     document.getElementById('filter-from').value = this._formatDateLocal(monthStart);
     document.getElementById('filter-to').value = this._formatDateLocal(today);
 
-    // Carica statistiche
     await this.loadStats();
   },
 
   getDateRange() {
     const today = new Date();
-    
     switch (this.periodFilter) {
       case 'month':
         return {
@@ -117,11 +115,10 @@ const StatsPage = {
           to: this._formatDateLocal(today)
         };
       case 'season':
-        // Stagione: settembre anno precedente - giugno anno corrente
         const year = today.getMonth() >= 8 ? today.getFullYear() : today.getFullYear() - 1;
         return {
-          from: this._formatDateLocal(new Date(year, 8, 1)), // Settembre
-          to: this._formatDateLocal(new Date(year + 1, 5, 30)) // Giugno
+          from: this._formatDateLocal(new Date(year, 8, 1)),
+          to: this._formatDateLocal(new Date(year + 1, 5, 30))
         };
       case 'custom':
         return {
@@ -145,7 +142,6 @@ const StatsPage = {
     try {
       const { from, to } = this.getDateRange();
 
-      // Carica allenamenti nel periodo
       const { data: trainings, error: tErr } = await db
         .from('trainings')
         .select('id, date')
@@ -160,7 +156,7 @@ const StatsPage = {
       if (totalTrainings === 0) {
         globalContainer.innerHTML = `
           <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: var(--gray-500);">
-             Nessun allenamento nel periodo selezionato
+            📭 Nessun allenamento nel periodo selezionato
           </div>
         `;
         tableContainer.innerHTML = `
@@ -171,7 +167,6 @@ const StatsPage = {
         return;
       }
 
-      // Carica tutti i giocatori
       const { data: players, error: pErr } = await db
         .from('players')
         .select('id, first_name, last_name, role')
@@ -182,7 +177,6 @@ const StatsPage = {
 
       const totalPlayers = players?.length || 0;
 
-      // Carica tutte le presenze nel periodo
       const trainingIds = trainings.map(t => t.id);
       const { data: attendances, error: aErr } = await db
         .from('attendances')
@@ -191,7 +185,6 @@ const StatsPage = {
 
       if (aErr) throw aErr;
 
-      // Calcola statistiche per giocatore
       const playerStats = {};
       players?.forEach(p => {
         playerStats[p.id] = {
@@ -210,7 +203,6 @@ const StatsPage = {
         }
       });
 
-      // Calcola media presenze globale
       let totalPresent = 0;
       Object.values(playerStats).forEach(ps => {
         totalPresent += ps.presente + ps.giustificato;
@@ -219,14 +211,12 @@ const StatsPage = {
         ? Math.round((totalPresent / (totalPlayers * totalTrainings)) * 100) 
         : 0;
 
-      // Giocatori con >75% presenze
       const highAttendance = Object.values(playerStats).filter(ps => {
         const total = ps.presente + ps.assente + ps.giustificato;
         const pct = total > 0 ? ((ps.presente + ps.giustificato) / total) * 100 : 0;
         return pct >= 75;
       }).length;
 
-      // Render statistiche globali
       globalContainer.innerHTML = `
         <div style="text-align: center; padding: 12px; background: rgba(122,31,46,0.05); border-radius: 8px;">
           <div style="font-size: 28px; font-weight: 700; color: var(--granata);">${totalTrainings}</div>
@@ -242,7 +232,6 @@ const StatsPage = {
         </div>
       `;
 
-      // Render tabella
       const roleEmoji = {
         'portiere': '🧤',
         'difensore': '🛡️',
@@ -312,7 +301,6 @@ const StatsPage = {
 
       tableContainer.innerHTML = html;
 
-      // Salva dati per export PDF
       this.statsData = {
         trainings: totalTrainings,
         players: totalPlayers,
@@ -340,8 +328,7 @@ const StatsPage = {
 
       const { trainings, players, avgAttendance, highAttendance, playerStats, from, to } = this.statsData;
 
-      // Intestazione
-      doc.setFillColor(122, 31, 46); // Granata
+      doc.setFillColor(122, 31, 46);
       doc.rect(0, 0, 210, 40, 'F');
       
       doc.setTextColor(255, 255, 255);
@@ -358,7 +345,6 @@ const StatsPage = {
       const toDate = new Date(to).toLocaleDateString('it-IT');
       doc.text(`Periodo: ${fromDate} - ${toDate}`, 105, 33, { align: 'center' });
 
-      // Statistiche globali
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold'); 
@@ -371,7 +357,6 @@ const StatsPage = {
       doc.text(`Media Presenze: ${avgAttendance}%`, 14, 70);
       doc.text(`Giocatori con >75% presenze: ${highAttendance}`, 14, 76);
 
-      // Tabella presenze
       const tableData = playerStats.map(ps => {
         const total = ps.presente + ps.assente + ps.giustificato;
         const pct = total > 0 ? Math.round(((ps.presente + ps.giustificato) / total) * 100) : 0;
@@ -407,7 +392,6 @@ const StatsPage = {
         margin: { top: 85 }
       });
 
-      // Footer
       const pageCount = doc.internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
@@ -421,7 +405,6 @@ const StatsPage = {
         );
       }
 
-      // Salva PDF
       const filename = `Statistiche_Presenze_${from}_to_${to}.pdf`;
       doc.save(filename);
       
