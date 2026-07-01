@@ -2,21 +2,31 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
+  
+  <!-- ✅ VIEWPORT OTTIMIZZATO PER iOS, Android e Web -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  
   <title>ASD San Carlo Milano - Under 9</title>
   
-  <!-- iOS PWA -->
+  <!-- ✅ iOS PWA META TAGS -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="San Carlo U9" />
+  
+  <!-- ✅ THEME COLOR -->
   <meta name="theme-color" content="#7A1F2E" />
   
+  <!-- ✅ FAVICON E ICONE -->
   <link rel="icon" type="image/svg+xml" href="/icons/logo.svg" />
   <link rel="apple-touch-icon" href="/icons/logo.svg" />
+  
+  <!-- ✅ MANIFEST PWA -->
   <link rel="manifest" href="/manifest.json" />
+  
+  <!-- ✅ CSS -->
   <link rel="stylesheet" href="/css/style.css" />
   
-  <!-- ONE SIGNAL SDK -->
+  <!-- ✅ ONE SIGNAL SDK - AGGIUNTO ORA -->
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -26,7 +36,9 @@
       });
     });
   </script>
+  <!-- FINE ONE SIGNAL -->
   
+  <!-- ✅ FIX CSS PER iOS (senza position: fixed su html/body) -->
   <style>
     * {
       -webkit-text-size-adjust: 100%;
@@ -59,15 +71,18 @@
       overflow-x: hidden;
     }
     
+    /* Previene zoom automatico sugli input su iOS */
     input, select, textarea {
       font-size: 16px !important;
     }
     
+    /* Immagini e media responsive */
     img, video, svg {
       max-width: 100%;
       height: auto;
     }
     
+    /* Safe area per iPhone con notch */
     @supports (padding-top: env(safe-area-inset-top)) {
       .app-header {
         padding-top: calc(12px + env(safe-area-inset-top));
