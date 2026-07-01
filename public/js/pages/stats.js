@@ -4,7 +4,6 @@ const StatsPage = {
   customTo: null,
   statsData: null,
 
-  // ✅ Helper: formatta data in YYYY-MM-DD usando ora LOCALE (no UTC)
   _formatDateLocal(date) {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -15,7 +14,7 @@ const StatsPage = {
   async render() {
     const view = document.getElementById('view');
     view.innerHTML = `
-      <h2 style="color: var(--granata); margin-bottom: 16px;"> Statistiche Presenze</h2>
+      <h2 style="color: var(--granata); margin-bottom: 16px;">📊 Statistiche Presenze</h2>
 
       <div id="global-stats" class="card" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;">
         <div class="spinner" style="grid-column: 1 / -1;"></div>
@@ -55,7 +54,6 @@ const StatsPage = {
       </div>
     `;
 
-    // Filtri periodo
     document.querySelectorAll('[data-period]').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('[data-period]').forEach(b => b.classList.remove('active'));
@@ -67,13 +65,11 @@ const StatsPage = {
           customDates.classList.remove('hidden');
         } else {
           customDates.classList.add('hidden');
-          // ✅ Auto-load quando si clicca Mese/3 Mesi/Stagione
           this.loadStats();
         }
       });
     });
 
-    // Applica filtro (solo per custom)
     document.getElementById('btn-apply-filter').addEventListener('click', () => {
       if (this.periodFilter === 'custom') {
         this.customFrom = document.getElementById('filter-from').value;
@@ -86,18 +82,15 @@ const StatsPage = {
       this.loadStats();
     });
 
-    // Export PDF
     document.getElementById('btn-export-pdf').addEventListener('click', () => {
       this.exportPDF();
     });
 
-    // ✅ Date di default: 1° luglio 2026 - oggi (mese corrente)
     const today = new Date();
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     document.getElementById('filter-from').value = this._formatDateLocal(monthStart);
     document.getElementById('filter-to').value = this._formatDateLocal(today);
 
-    // Carica statistiche iniziali
     await this.loadStats();
   },
 
@@ -106,18 +99,20 @@ const StatsPage = {
     let from, to;
     switch (this.periodFilter) {
       case 'month':
+        // ✅ FIX: Dal 1° del mese corrente alla FINE del mese corrente
         from = new Date(today.getFullYear(), today.getMonth(), 1);
-        to = today;
+        to = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Ultimo giorno del mese
         break;
       case '3months':
-        from = new Date(today.getFullYear(), today.getMonth() - 3, 1);
-        to = today;
+        // ✅ FIX: Ultimi 3 mesi completi
+        from = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+        to = new Date(today.getFullYear(), today.getMonth() + 1, 0);
         break;
       case 'season':
         // ✅ FIX: Stagione 2026-2027: settembre 2026 - giugno 2027
         const year = today.getFullYear();
-        from = new Date(year, 8, 1); // Settembre anno corrente (2026)
-        to = new Date(year + 1, 5, 30); // Giugno anno successivo (2027)
+        from = new Date(year, 8, 1);
+        to = new Date(year + 1, 5, 30);
         break;
       case 'custom':
         from = new Date(this.customFrom);
@@ -125,7 +120,6 @@ const StatsPage = {
         break;
     }
 
-    // ✅ Usa _formatDateLocal invece di toISOString()
     return {
       from: this._formatDateLocal(from),
       to: this._formatDateLocal(to)
