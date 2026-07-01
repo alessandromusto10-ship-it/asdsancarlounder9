@@ -391,45 +391,62 @@ const WhatsAppPage = {
     this.updatePreview();
   },
 
-  updatePreview() {
-    const matchId = document.getElementById('conv-match').value;
-    const date = document.getElementById('conv-date').value;
-    const location = document.getElementById('conv-location').value;
-    const meeting = document.getElementById('conv-meeting').value;
-    const kickoff = document.getElementById('conv-kickoff').value;
-    const kit = document.getElementById('conv-kit').value;
-    const notes = document.getElementById('conv-notes').value;
-    const matchOption = document.getElementById('conv-match').selectedOptions[0];
-    const matchText = matchId ? matchOption.textContent : '[Partita non selezionata]';
+updatePreview() {
+  const matchId = document.getElementById('conv-match').value;
+  const date = document.getElementById('conv-date').value;
+  const location = document.getElementById('conv-location').value;
+  const meeting = document.getElementById('conv-meeting').value;
+  const kickoff = document.getElementById('conv-kickoff').value;
+  const kit = document.getElementById('conv-kit').value;
+  const notes = document.getElementById('conv-notes').value;
+  const matchOption = document.getElementById('conv-match').selectedOptions[0];
 
-    // Convocati uno sotto l'altro
-    const selectedNames = Array.from(document.querySelectorAll('.player-cb:checked'))
-      .map(cb => cb.parentElement.querySelector('span:nth-child(2)').textContent)
-      .join('\n');
+  // Helper: rimuove i secondi dagli orari (HH:MM:SS → HH:MM)
+  const cleanTime = (time) => {
+    if (!time) return '[--:--]';
+    return time.split(':').slice(0, 2).join(':');
+  };
 
-    // Attrezzatura uno sotto l'altro con emoji
-    const selectedEquip = Array.from(document.querySelectorAll('.equip-cb:checked'))
-      .map(cb => {
-        const item = this.EQUIPMENT_LIST.find(e => e.id === cb.value);
-        return item ? `${item.emoji} ${item.label}` : cb.value;
-      })
-      .join('\n');
+  // ✅ Costruisce il testo della partita usando SOLO le squadre (niente orario)
+  const homeName = matchOption?.dataset.home || 'Casa';
+  const awayName = matchOption?.dataset.away || 'Ospite';
+  const matchText = matchId ? `${homeName} vs ${awayName}` : '[Partita non selezionata]';
 
-    const msg = `🏟️ *CONVOCAZIONE - ASD San Carlo Milano U9*
+  const dateStr = date ? new Date(date).toLocaleDateString('it-IT') : '[Da definire]';
+
+  // Convocati uno sotto l'altro
+  const selectedNames = Array.from(document.querySelectorAll('.player-cb:checked'))
+    .map(cb => cb.parentElement.querySelector('span:nth-child(2)').textContent)
+    .join('\n');
+
+  // Attrezzatura uno sotto l'altro con emoji
+  const selectedEquip = Array.from(document.querySelectorAll('.equip-cb:checked'))
+    .map(cb => {
+      const item = this.EQUIPMENT_LIST.find(e => e.id === cb.value);
+      return item ? `${item.emoji} ${item.label}` : cb.value;
+    })
+    .join('\n');
+
+  // ✅ Messaggio con spaziature richieste
+  const msg = `🏟️ *CONVOCAZIONE - ASD San Carlo Milano U9*
+
 ⚽ Partita: ${matchText}
-📅 Data: ${date ? new Date(date).toLocaleDateString('it-IT') : '[Da definire]'}
-⏰ Ritrovo: ${meeting || '[--:--]'} | Inizio: ${kickoff || '[--:--]'}
+📅 Data: ${dateStr}  Inizio: ${cleanTime(kickoff)}
+⏰ Ritrovo: ${cleanTime(meeting)}
 📍 Luogo: ${location || '[Da definire]'}
 🧦 Divisa: ${kit}
-🎒 Da portare:
-${selectedEquip || '[Nessun articolo selezionato]'}
+
 👇 CONVOCATI:
 ${selectedNames || '[Nessun giocatore selezionato]'}
-${notes ? `📝 *Note:* ${notes}\n` : ''}
-✅ Si prega di confermare la presenza al più presto.
-Grazie e buon calcio! ⚽`;
-    document.getElementById('msg-preview').value = msg;
-  },
+
+🎒 Da portare:
+${selectedEquip || '[Nessun articolo selezionato]'}
+
+${notes ? `📝 *Note:* ${notes}\n` : ''}💚 In caso di assenza, contattare il mister con anticipo!
+ForzaRagazzi 💪⚽`;
+
+  document.getElementById('msg-preview').value = msg;
+},
 
   async saveConvocation() {
     const matchId = document.getElementById('conv-match').value;
