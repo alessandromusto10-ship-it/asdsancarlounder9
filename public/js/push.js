@@ -162,6 +162,57 @@ const PushManager = {
     }
   },
 
+  // ✅ NUOVA FUNZIONE: Invia notifica push tramite Edge Function
+  async sendNotification(title, message, options = {}) {
+    try {
+      console.log('📤 Invio notifica push...');
+      console.log('📤 Titolo:', title);
+      console.log('📤 Messaggio:', message);
+      console.log('📤 Opzioni:', options);
+
+      const { data: { session } } = await db.auth.getSession();
+      if (!session) {
+        console.error('❌ Utente non autenticato');
+        return false;
+      }
+
+      // Ottieni l'URL del progetto Supabase
+      const supabaseUrl = window.location.origin.includes('localhost') 
+        ? 'https://asdsancarounder9.supabase.co' 
+        : window.location.origin;
+
+      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/send-push-notification`;
+      console.log('📤 Edge Function URL:', edgeFunctionUrl);
+
+      const response = await fetch(edgeFunctionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          title,
+          message,
+          userIds: options.userIds || []
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ Errore risposta Edge Function:', errorData);
+        throw new Error(errorData.error || 'Errore invio notifica');
+      }
+
+      const result = await response.json();
+      console.log('✅ Notifica inviata con successo:', result);
+      return true;
+    } catch (err) {
+      console.error('❌ Errore sendNotification:', err);
+      console.error('❌ Stack trace:', err.stack);
+      return false;
+    }
+  },
+
   async deleteSubscription() {
     try {
       const { data: { user } } = await db.auth.getUser();
