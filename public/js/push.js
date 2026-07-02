@@ -2,26 +2,61 @@
 const PushManager = {
   APP_ID: 'e631ad4f-de2c-4747-83fa-34da6f85b8e0',
   currentUserId: null,
+  oneSignalLoaded: false,
 
   async init() {
-    console.log('🔔 PushManager: init() chiamato');
+    console.log('🔔 PushManager: init()');
 
-    // ✅ Carica OneSignal SDK se non è già caricato
+    // ✅ Monitora continuamente il login/logout
+    const checkAuth = async () => {
+      try {
+        const { data: { user } } = await db.auth.getUser();
+        
+        if (user && user.id !== this.currentUserId) {
+          console.log('👤 Nuovo utente rilevato:', user.id);
+          console.log('👤 Vecchio user_id:', this.currentUserId);
+          this.currentUserId = user.id;
+          
+          // ✅ Carica OneSignal SOLO quando l'utente è loggato
+          if (!this.oneSignalLoaded) {
+            console.log('📥 Utente loggato, carico OneSignal...');
+            this.loadOneSignal();
+          } else {
+            // OneSignal già caricato, controlla e salva subscription
+            console.log('✅ OneSignal già caricato, controllo subscription');
+            this.checkAndSave();
+          }
+        } else if (!user && this.currentUserId) {
+          console.log('👋 Utente ha fatto logout:', this.currentUserId);
+          this.currentUserId = null;
+        }
+      } catch (err) {
+        console.error('❌ Errore checkAuth:', err);
+      }
+
+      setTimeout(checkAuth, 2000);
+    };
+
+    checkAuth();
+  },
+
+  // ✅ Carica dinamicamente lo script OneSignal (chiamato SOLO dopo login)
+  loadOneSignal() {
+    console.log('📥 Caricamento script OneSignal...');
+    
     if (!window.OneSignalDeferred) {
       window.OneSignalDeferred = window.OneSignalDeferred || [];
-      const script = document.createElement('script');
-      script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
-      script.async = true;
-      document.head.appendChild(script);
-      console.log('📥 Caricamento script OneSignal...');
     }
 
-    // ✅ Aspetta che OneSignal sia pronto
+    const script = document.createElement('script');
+    script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
+    script.async = true;
+    document.head.appendChild(script);
+
     window.OneSignalDeferred.push(async (OneSignal) => {
-      console.log('✅ OneSignalDeferred callback eseguita');
-      
       await OneSignal.init({ appId: PushManager.APP_ID });
       console.log('✅ OneSignal inizializzato');
+      PushManager.oneSignalLoaded = true;
 
       // Ascolta quando cambia la subscription
       OneSignal.Notifications.addEventListener('subscriptionChange', (isSubscribed) => {
@@ -39,57 +74,25 @@ const PushManager = {
         }
       });
 
-      // ✅ Controlla il permesso corrente
-      const perm = OneSignal.Notifications.permission;
-      console.log('📋 Current permission:', perm);
-
-      // ✅ Inizia a monitorare il login/logout
-      PushManager.startAuthMonitor();
+      // Controlla stato attuale
+      PushManager.checkAndSave();
     });
   },
 
-  // ✅ MONITORA IL LOGIN/LOGOUT E SALVA LA SUBSCRIPTION PER OGNI UTENTE
-  startAuthMonitor() {
-    console.log('🔍 startAuthMonitor: inizio monitoraggio login/logout');
-    
-    const checkAuth = async () => {
-      try {
-        const { data: { user } } = await db.auth.getUser();
-        
-        if (user && user.id !== this.currentUserId) {
-          // Nuovo utente loggato (o primo login)
-          console.log('👤 Nuovo utente rilevato:', user.id);
-          console.log('👤 Vecchio user_id:', this.currentUserId);
-          this.currentUserId = user.id;
+  // ✅ Controlla se il permesso è già concesso e salva
+  checkAndSave() {
+    const OneSignal = window.OneSignal;
+    if (!OneSignal) return;
 
-          // ✅ Controlla se OneSignal è pronto e il permesso è già concesso
-          const OneSignal = window.OneSignal;
-          if (OneSignal) {
-            const perm = OneSignal.Notifications.permission;
-            console.log('📋 Permission per nuovo utente:', perm);
-            
-            if (perm === 'granted' || perm === true) {
-              console.log('✅ Permesso già concesso, salvo subscription per nuovo utente');
-              // Aspetta un attimo che OneSignal abbia l'ID
-              setTimeout(() => this.saveSubscription(), 2000);
-            } else {
-              console.log('⏳ Permesso non ancora concesso, aspetto...');
-            }
-          }
-        } else if (!user && this.currentUserId) {
-          // Utente ha fatto logout
-          console.log('👋 Utente ha fatto logout:', this.currentUserId);
-          this.currentUserId = null;
-        }
-      } catch (err) {
-        console.error('❌ Errore checkAuth:', err);
-      }
+    const perm = OneSignal.Notifications.permission;
+    console.log('📋 Current permission:', perm);
 
-      // Controlla ogni 2 secondi
-      setTimeout(checkAuth, 2000);
-    };
-
-    checkAuth();
+    if (perm === 'granted' || perm === true) {
+      console.log('✅ Permesso già concesso, salvo subscription');
+      setTimeout(() => this.saveSubscription(), 2000);
+    } else {
+      console.log('⏳ Permesso non ancora concesso');
+    }
   },
 
   async saveSubscription() {
@@ -134,8 +137,6 @@ const PushManager = {
 
       console.log('📱 Device type:', deviceType);
 
-      // ✅ UPSERT: Se onesignal_player_id esiste già, aggiorna user_id e device_type
-      console.log('💾 Eseguo upsert su push_subscriptions...');
       const { data, error } = await db
         .from('push_subscriptions')
         .upsert({
