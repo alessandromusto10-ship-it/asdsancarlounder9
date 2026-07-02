@@ -246,6 +246,20 @@ async sendResultNotification(matchId, homeScore, awayScore) {
       return;
     }
     
+    // ✅ CONTROLLO: Notifica SOLO se la partita coinvolge S. Carlo Milano
+    const homeName = matchData.home_team?.name || '';
+    const awayName = matchData.away_team?.name || '';
+    const SANCARLO_NAME = 'S. Carlo Milano';
+    
+    const isSanCarloMatch = homeName === SANCARLO_NAME || awayName === SANCARLO_NAME;
+    
+    if (!isSanCarloMatch) {
+      console.log('⏭️ Partita non S. Carlo, notifica saltata:', `${homeName} vs ${awayName}`);
+      return;
+    }
+    
+    console.log('✅ Partita S. Carlo rilevata, procedo con la notifica');
+    
     // Recupera TUTTI gli user_id con subscription attiva
     const { data: subscriptions, error: subsError } = await db
       .from('push_subscriptions')
@@ -267,12 +281,10 @@ async sendResultNotification(matchId, homeScore, awayScore) {
     console.log('📤 Invio notifica a', userIds.length, 'utenti');
     
     // Costruisci il messaggio
-    const homeName = matchData.home_team?.name || 'Casa';
-    const awayName = matchData.away_team?.name || 'Ospite';
     const dateObj = new Date(matchData.match_date);
     const dateStr = dateObj.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' });
     
-    const title = ' Risultato Aggiornato';
+    const title = '⚽ Risultato Aggiornato';
     const message = `${homeName} ${homeScore} - ${awayScore} ${awayName}\n📅 ${dateStr}\n\nControlla la classifica nell'app!`;
     
     // Invia la notifica a tutti
