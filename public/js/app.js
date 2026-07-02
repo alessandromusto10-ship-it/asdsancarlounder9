@@ -38,7 +38,7 @@ function toggleTheme() {
   document.documentElement.setAttribute('data-theme', newTheme);
   localStorage.setItem('theme', newTheme);
   updateThemeIcon();
-  toast(`Tema ${newTheme === 'dark' ? 'scuro 🌙' : 'chiaro ☀️'} attivato`, 'success');
+  toast(`Tema ${newTheme === 'dark' ? 'scuro ' : 'chiaro ☀️'} attivato`, 'success');
 }
 
 function updateThemeIcon() {
@@ -72,8 +72,11 @@ $('#btn-install-close')?.addEventListener('click', () => {
 // ===== LOGOUT & TEMA =====
 $('#btn-logout')?.addEventListener('click', async () => {
   await Auth.signOut();
+  $('#app-header')?.classList.add('hidden');
+  $('#bottom-nav')?.classList.add('hidden');
   Router.navigate('/login');
 });
+
 $('#btn-theme')?.addEventListener('click', toggleTheme);
 
 // ===== BOTTOM SHEET (Menu Gestione) =====
@@ -97,19 +100,17 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeBotto
 function renderNav(role) {
   const nav = $('#bottom-nav');
   if (!nav) return;
-
+  
   if (role === 'mister') {
-    // Elementi dentro il menu Gestione
     const managementItems = [
-		{ path: '/attendance', icon: '✅', label: 'Presenze' },
-		{ path: '/results', icon: '📊', label: 'Risultati' },
-		{ path: '/trainings', icon: '🏃', label: 'Allenamenti' },
-		{ path: '/championship', icon: '🏟️', label: 'Campionato' },
-		{ path: '/roster', icon: '👥', label: 'Rosa' },
-		{ path: '/stats', icon: '📈', label: 'Statistiche' }
-	];
+      { path: '/attendance', icon: '✅', label: 'Presenze' },
+      { path: '/results', icon: '📊', label: 'Risultati' },
+      { path: '/trainings', icon: '🏃', label: 'Allenamenti' },
+      { path: '/championship', icon: '🏟️', label: 'Campionato' },
+      { path: '/roster', icon: '👥', label: 'Rosa' },
+      { path: '/stats', icon: '📈', label: 'Statistiche' }
+    ];
 
-    // Renderizza contenuto bottom sheet
     const sheetContent = $('#bottom-sheet-content');
     if (sheetContent) {
       sheetContent.innerHTML = managementItems.map(item => `
@@ -127,7 +128,6 @@ function renderNav(role) {
       });
     }
 
-    // Nav principale mister: 6 voci (incluso WhatsApp)
     nav.innerHTML = `
       <button class="nav-item" data-path="/" onclick="Router.navigate('/')">
         <span class="nav-icon">🏠</span><span>Home</span>
@@ -148,11 +148,9 @@ function renderNav(role) {
         <span class="nav-icon">📱</span><span>WhatsApp</span>
       </button>
     `;
-
+    
     $('#btn-gear')?.addEventListener('click', openBottomSheet);
-
   } else {
-    // Genitori: 5 voci (SENZA WhatsApp)
     nav.innerHTML = `
       <button class="nav-item" data-path="/" onclick="Router.navigate('/')">
         <span class="nav-icon">🏠</span><span>Home</span>
@@ -164,7 +162,7 @@ function renderNav(role) {
         <span class="nav-icon">⚽</span><span>Partite</span>
       </button>
       <button class="nav-item" data-path="/standings" onclick="Router.navigate('/standings')">
-        <span class="nav-icon">🥇</span><span>Classifica</span>
+        <span class="nav-icon"></span><span>Classifica</span>
       </button>
       <button class="nav-item" data-path="/attendance" onclick="Router.navigate('/attendance')">
         <span class="nav-icon">✅</span><span>Presenze</span>
@@ -191,82 +189,90 @@ Router.register('/championship', () => ChampionshipPage.render());
 
 // ===== INIT =====
 async function init() {
-  const auth = await Auth.getCurrentUser();
-  if (auth?.user) {
-    // Se l'utente è loggato ma non ha profilo, prova a crearlo (caso login Google mister)
-    if (!auth.profile) {
-      console.log('🔍 Utente senza profilo, verifico se è un mister...');
-      try {
-        const misterProfile = await Auth.ensureMisterProfile(auth.user);
-        if (misterProfile) {
-          console.log('✅ Profilo mister creato/verificato');
-          const updatedAuth = await Auth.getCurrentUser();
-          if (updatedAuth?.profile) {
-            $('#app-header')?.classList.remove('hidden');
-            $('#bottom-nav')?.classList.remove('hidden');
-            const userNameEl = $('#user-name');
-            if (userNameEl) {
-              userNameEl.textContent = updatedAuth.profile.full_name || updatedAuth.user.email;
+  try {
+    const auth = await Auth.getCurrentUser();
+    
+    if (auth?.user) {
+      // Se l'utente è loggato ma non ha profilo, prova a crearlo (caso login Google mister)
+      if (!auth.profile) {
+        console.log('🔍 Utente senza profilo, verifico se è un mister...');
+        try {
+          const misterProfile = await Auth.ensureMisterProfile(auth.user);
+          if (misterProfile) {
+            console.log('✅ Profilo mister creato/verificato');
+            const updatedAuth = await Auth.getCurrentUser();
+            if (updatedAuth?.profile) {
+              $('#app-header')?.classList.remove('hidden');
+              $('#bottom-nav')?.classList.remove('hidden');
+              const userNameEl = $('#user-name');
+              if (userNameEl) {
+                userNameEl.textContent = updatedAuth.profile.full_name || updatedAuth.user.email;
+              }
+              renderNav(updatedAuth.profile.role);
+              Router.resolve();
+              return;
             }
-            renderNav(updatedAuth.profile.role);
-            Router.resolve();
+          } else {
+            console.warn('⚠️ Email non autorizzata come mister, logout...');
+            await Auth.signOut();
+            toast('Accesso non autorizzato. Contatta l\'amministratore.', 'error');
+            $('#app-header')?.classList.add('hidden');
+            $('#bottom-nav')?.classList.add('hidden');
+            Router.navigate('/login');
             return;
           }
-        } else {
-          console.warn('⚠️ Email non autorizzata come mister, logout...');
+        } catch (err) {
+          console.error('❌ Errore creazione profilo:', err);
           await Auth.signOut();
-          toast('Accesso non autorizzato. Contatta l'amministratore.', 'error');
-          $('#app-header')?.classList.add('hidden');
-          $('#bottom-nav')?.classList.add('hidden');
+          toast('Errore durante l\'accesso: ' + err.message, 'error');
           Router.navigate('/login');
           return;
         }
-      } catch (err) {
-        console.error('❌ Errore creazione profilo:', err);
-        await Auth.signOut();
-        toast('Errore durante l\'accesso: ' + err.message, 'error');
-        Router.navigate('/login');
-        return;
       }
+      
+      // Profilo esistente (genitore o mister già configurato)
+      $('#app-header')?.classList.remove('hidden');
+      $('#bottom-nav')?.classList.remove('hidden');
+      const userNameEl = $('#user-name');
+      if (userNameEl) {
+        userNameEl.textContent = auth.profile.full_name || auth.user.email;
+      }
+      renderNav(auth.profile.role);
+    } else {
+      $('#app-header')?.classList.add('hidden');
+      $('#bottom-nav')?.classList.add('hidden');
     }
-    // Profilo esistente (genitore o mister già configurato)
-    $('#app-header')?.classList.remove('hidden');
-    $('#bottom-nav')?.classList.remove('hidden');
-    const userNameEl = $('#user-name');
-    if (userNameEl) {
-      userNameEl.textContent = auth.profile.full_name || auth.user.email;
-    }
-    renderNav(auth.profile.role);
-  } else {
-    $('#app-header')?.classList.add('hidden');
-    $('#bottom-nav')?.classList.add('hidden');
+    
+    Router.resolve();
+  } catch (err) {
+    console.error('❌ Errore init:', err);
+    Router.resolve();
   }
-  Router.resolve();
 }
 
 // ✅ Listener migliorato: gestisce solo eventi specifici
 db.auth.onAuthStateChange((event, session) => {
   console.log(' Auth state change:', event);
   
-  // ✅ Solo SIGNED_OUT esplicito (quando l'utente fa logout)
+  // Solo SIGNED_OUT esplicito (quando l'utente fa logout)
   if (event === 'SIGNED_OUT') {
     console.log('👋 Logout effettuato');
     $('#app-header')?.classList.add('hidden');
     $('#bottom-nav')?.classList.add('hidden');
     Router.navigate('/login');
   }
-  // ✅ TOKEN_REFRESHED: non fare nulla, la sessione resta attiva
+  // TOKEN_REFRESHED: non fare nulla, la sessione resta attiva
   else if (event === 'TOKEN_REFRESHED') {
     console.log('🔄 Token aggiornato, sessione mantenuta');
   }
-  // ✅ USER_UPDATED: aggiorna la UI se necessario
+  // USER_UPDATED: aggiorna la UI se necessario
   else if (event === 'USER_UPDATED') {
     console.log('👤 Utente aggiornato');
     init();
   }
 });
 
-// ✅ Init iniziale
+// Init iniziale
 init();
 
 // Esponi utility globali
