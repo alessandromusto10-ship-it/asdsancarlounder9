@@ -73,23 +73,29 @@ const LoginPage = {
     const loginForm = view.querySelector('#login-form');
 
     const updateRoleUI = () => {
-      tabs.forEach(t => t.classList.toggle('active', t.dataset.role === currentRole));
-      
-      if (currentRole === 'mister') {
-        // Per i mister: nascondi email/password, mostra solo Google
-        emailSection.classList.add('hidden');
-        googleOnlySection.classList.remove('hidden');
-        // Nascondi i campi required per non bloccare il form
-        view.querySelector('#login-email').required = false;
-        view.querySelector('#login-password').required = false;
-      } else {
-        // Per i genitori: mostra email/password
-        emailSection.classList.remove('hidden');
-        googleOnlySection.classList.add('hidden');
-        view.querySelector('#login-email').required = true;
-        view.querySelector('#login-password').required = true;
-      }
-    };
+  tabs.forEach(t => t.classList.toggle('active', t.dataset.role === currentRole));
+  const googleBtn = view.querySelector('#btn-google-login');
+  const divider = view.querySelector('.divider');
+  
+  if (currentRole === 'mister') {
+    // Per i mister: nascondi email/password, mostra solo Google
+    emailSection.classList.add('hidden');
+    googleOnlySection.classList.remove('hidden');
+    googleBtn.classList.remove('hidden');
+    divider.classList.remove('hidden');
+    // Nascondi i campi required per non bloccare il form
+    view.querySelector('#login-email').required = false;
+    view.querySelector('#login-password').required = false;
+  } else {
+    // Per i genitori: mostra email/password, NASCONDI Google
+    emailSection.classList.remove('hidden');
+    googleOnlySection.classList.add('hidden');
+    googleBtn.classList.add('hidden');   // ✅ Nasconde bottone Google
+    divider.classList.add('hidden');      // ✅ Nasconde scritta "oppure"
+    view.querySelector('#login-email').required = true;
+    view.querySelector('#login-password').required = true;
+  }
+};
 
     tabs.forEach(tab => {
       tab.addEventListener('click', () => {
