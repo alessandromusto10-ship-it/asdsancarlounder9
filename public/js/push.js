@@ -85,68 +85,75 @@ const PushManager = {
     checkAuth();
   },
 
-  async saveSubscription() {
-    try {
-      console.log('💾 Salvataggio subscription...');
-      
-      const OneSignal = window.OneSignal;
-      if (!OneSignal) {
-        console.error('❌ OneSignal non disponibile');
-        return;
-      }
-
-      const userId = OneSignal.User.PushSubscription.id;
-      const optIn = OneSignal.User.PushSubscription.optedIn;
-
-      console.log('📋 OneSignal User ID:', userId);
-      console.log('📋 Opt-in status:', optIn);
-
-      if (!userId) {
-        console.warn('⚠️ Nessun userId disponibile, riprovo...');
-        setTimeout(() => this.saveSubscription(), 1000);
-        return;
-      }
-
-      if (!optIn) {
-        console.warn('⚠️ Opt-in false');
-        return;
-      }
-
-      const { data: { user } } = await db.auth.getUser();
-      if (!user) {
-        console.warn('⚠️ Utente non loggato');
-        return;
-      }
-
-      console.log('👤 User ID Supabase:', user.id);
-
-      const ua = navigator.userAgent;
-      let deviceType = 'Web';
-      if (/android/i.test(ua)) deviceType = 'Android';
-      else if (/iphone|ipad|ipod/i.test(ua)) deviceType = 'iOS';
-
-      console.log('📱 Device type:', deviceType);
-
-      const { data, error } = await db
-        .from('push_subscriptions')
-        .upsert({
-          user_id: user.id,
-          onesignal_player_id: userId,
-          device_type: deviceType
-        }, {
-          onConflict: 'onesignal_player_id'
-        })
-        .select();
-
-      if (error) {
-        console.error('❌ Errore DB:', error);
-      } else {
-        console.log('✅ Subscription salvata per utente:', user.id, data);
-      }
-    } catch (err) {
-      console.error('❌ Errore saveSubscription:', err);
+async saveSubscription() {
+  try {
+    console.log('💾 Salvataggio subscription...');
+    
+    const OneSignal = window.OneSignal;
+    if (!OneSignal) {
+      console.error('❌ OneSignal non disponibile');
+      return;
     }
-  },
+
+    const userId = OneSignal.User.PushSubscription.id;
+    const optIn = OneSignal.User.PushSubscription.optedIn;
+
+    console.log('📋 OneSignal User ID:', userId);
+    console.log('📋 Opt-in status:', optIn);
+
+    if (!userId) {
+      console.warn('⚠️ Nessun userId disponibile, riprovo...');
+      setTimeout(() => this.saveSubscription(), 1000);
+      return;
+    }
+
+    if (!optIn) {
+      console.warn('⚠️ Opt-in false');
+      return;
+    }
+
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) {
+      console.warn('⚠️ Utente non loggato');
+      return;
+    }
+
+    console.log('👤 User ID Supabase:', user.id);
+
+    const ua = navigator.userAgent;
+    let deviceType = 'Web';
+    if (/android/i.test(ua)) deviceType = 'Android';
+    else if (/iphone|ipad|ipod/i.test(ua)) deviceType = 'iOS';
+
+    console.log('📱 Device type:', deviceType);
+
+    // ✅ PRIMA: Elimina eventuali subscription esistenti per questo dispositivo
+    console.log('🗑️ Elimino vecchia subscription (se esiste)...');
+    await db
+      .from('push_subscriptions')
+      .delete()
+      .eq('onesignal_player_id', userId);
+
+    // ✅ POI: Inserisci la nuova subscription per l'utente corrente
+    console.log('💾 Inserisco nuova subscription...');
+    const { data, error } = await db
+      .from('push_subscriptions')
+      .insert({
+        user_id: user.id,
+        onesignal_player_id: userId,
+        device_type: deviceType
+      })
+      .select();
+
+    if (error) {
+      console.error('❌ Errore DB:', error);
+    } else {
+      console.log('✅ Subscription salvata per utente:', user.id, data);
+    }
+  } catch (err) {
+    console.error('❌ Errore saveSubscription:', err);
+  }
+},
 
   async deleteSubscription() {
     try {
