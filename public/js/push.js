@@ -7,22 +7,18 @@ const PushManager = {
   async init() {
     console.log('🔔 PushManager: init()');
 
-    // ✅ Monitora continuamente il login/logout
     const checkAuth = async () => {
       try {
         const { data: { user } } = await db.auth.getUser();
         
         if (user && user.id !== this.currentUserId) {
           console.log('👤 Nuovo utente rilevato:', user.id);
-          console.log('👤 Vecchio user_id:', this.currentUserId);
           this.currentUserId = user.id;
           
-          // ✅ Carica OneSignal SOLO quando l'utente è loggato
           if (!this.oneSignalLoaded) {
             console.log('📥 Utente loggato, carico OneSignal...');
             this.loadOneSignal();
           } else {
-            // OneSignal già caricato, controlla e salva subscription
             console.log('✅ OneSignal già caricato, controllo subscription');
             this.checkAndSave();
           }
@@ -40,7 +36,6 @@ const PushManager = {
     checkAuth();
   },
 
-  // ✅ Carica dinamicamente lo script OneSignal (chiamato SOLO dopo login)
   loadOneSignal() {
     console.log('📥 Caricamento script OneSignal...');
     
@@ -58,7 +53,6 @@ const PushManager = {
       console.log('✅ OneSignal inizializzato');
       PushManager.oneSignalLoaded = true;
 
-      // Ascolta quando cambia la subscription
       OneSignal.Notifications.addEventListener('subscriptionChange', (isSubscribed) => {
         console.log('🔔 subscriptionChange:', isSubscribed);
         if (isSubscribed) {
@@ -66,7 +60,6 @@ const PushManager = {
         }
       });
 
-      // Ascolta quando cambia il permesso
       OneSignal.Notifications.addEventListener('permissionChange', (permission) => {
         console.log('🔔 permissionChange:', permission);
         if (permission === 'granted' || permission === true) {
@@ -74,12 +67,10 @@ const PushManager = {
         }
       });
 
-      // Controlla stato attuale
       PushManager.checkAndSave();
     });
   },
 
-  // ✅ Controlla se il permesso è già concesso e salva
   checkAndSave() {
     const OneSignal = window.OneSignal;
     if (!OneSignal) return;
@@ -90,8 +81,6 @@ const PushManager = {
     if (perm === 'granted' || perm === true) {
       console.log('✅ Permesso già concesso, salvo subscription');
       setTimeout(() => this.saveSubscription(), 2000);
-    } else {
-      console.log('⏳ Permesso non ancora concesso');
     }
   },
 
@@ -151,18 +140,15 @@ const PushManager = {
 
       if (error) {
         console.error('❌ Errore DB:', error);
-        console.error('❌ Error details:', JSON.stringify(error, null, 2));
       } else {
         console.log('✅ Subscription salvata/aggiornata per utente:', user.id);
-        console.log('✅ Dati salvati:', data);
       }
     } catch (err) {
       console.error('❌ Errore saveSubscription:', err);
-      console.error('❌ Stack trace:', err.stack);
     }
   },
 
-  // ✅ NUOVA FUNZIONE: Invia notifica push tramite Edge Function
+  // ✅ FUNZIONE PER INVIARE NOTIFICHE TRAMITE EDGE FUNCTION
   async sendNotification(title, message, options = {}) {
     try {
       console.log('📤 Invio notifica push...');
@@ -176,9 +162,8 @@ const PushManager = {
         return false;
       }
 
-      // Ottieni l'URL del progetto Supabase
       const supabaseUrl = window.location.origin.includes('localhost') 
-        ? 'https://asdsancarounder9.supabase.co' 
+        ? 'https://ydcxrzdlmrprvhefnctj.supabase.co' 
         : window.location.origin;
 
       const edgeFunctionUrl = `${supabaseUrl}/functions/v1/send-push-notification`;
@@ -197,13 +182,31 @@ const PushManager = {
         })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('❌ Errore risposta Edge Function:', errorData);
-        throw new Error(errorData.error || 'Errore invio notifica');
+      console.log('📤 Response status:', response.status);
+      console.log('📤 Response OK:', response.ok);
+
+      // ✅ Leggi prima il testo, poi prova a parsare JSON
+      const responseText = await response.text();
+      console.log('📤 Response text:', responseText);
+
+      if (!responseText) {
+        throw new Error('Edge Function non ha risposto');
       }
 
-      const result = await response.json();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        console.error('❌ Errore parsing JSON:', e);
+        console.error('❌ Response non è JSON valido:', responseText);
+        throw new Error('Risposta non valida dall\'Edge Function');
+      }
+
+      if (!response.ok) {
+        console.error('❌ Errore Edge Function:', result);
+        throw new Error(result.error || 'Errore invio notifica');
+      }
+
       console.log('✅ Notifica inviata con successo:', result);
       return true;
     } catch (err) {
@@ -236,13 +239,8 @@ const PushManager = {
 
 window.PushManager = PushManager;
 
-// Auto-init
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    console.log('📄 DOMContentLoaded');
-    PushManager.init();
-  });
+  document.addEventListener('DOMContentLoaded', () => PushManager.init());
 } else {
-  console.log('📄 DOM già pronto');
   PushManager.init();
 }
