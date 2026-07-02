@@ -148,7 +148,7 @@ const PushManager = {
     }
   },
 
-  // ✅ FUNZIONE PER INVIARE NOTIFICHE TRAMITE EDGE FUNCTION
+  // ✅ FUNZIONE PER INVIARE NOTIFICHE
   async sendNotification(title, message, options = {}) {
     try {
       console.log('📤 Invio notifica push...');
@@ -162,8 +162,7 @@ const PushManager = {
         return false;
       }
 
-      const supabaseProjectUrl = 'https://ydcxrzdlmrprvhefnctj.supabase.co';
-
+      const supabaseUrl = 'https://ydcxrzdlmrprvhefnctj.supabase.co';
       const edgeFunctionUrl = `${supabaseUrl}/functions/v1/send-push-notification`;
       console.log('📤 Edge Function URL:', edgeFunctionUrl);
 
@@ -183,7 +182,6 @@ const PushManager = {
       console.log('📤 Response status:', response.status);
       console.log('📤 Response OK:', response.ok);
 
-      // ✅ Leggi prima il testo, poi prova a parsare JSON
       const responseText = await response.text();
       console.log('📤 Response text:', responseText);
 
@@ -196,7 +194,6 @@ const PushManager = {
         result = JSON.parse(responseText);
       } catch (e) {
         console.error('❌ Errore parsing JSON:', e);
-        console.error('❌ Response non è JSON valido:', responseText);
         throw new Error('Risposta non valida dall\'Edge Function');
       }
 
@@ -209,7 +206,6 @@ const PushManager = {
       return true;
     } catch (err) {
       console.error('❌ Errore sendNotification:', err);
-      console.error('❌ Stack trace:', err.stack);
       return false;
     }
   },
