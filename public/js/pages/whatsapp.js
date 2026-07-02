@@ -449,53 +449,111 @@ ForzaRagazzi 💪⚽`;
 },
 
   async saveConvocation() {
-    const matchId = document.getElementById('conv-match').value;
-    if (!matchId) return toast('Seleziona una partita', 'error');
-    const whatToBring = Array.from(this.selectedEquipment).join(',');
+  const matchId = document.getElementById('conv-match').value;
+  if (!matchId) return toast('Seleziona una partita', 'error');
+  const whatToBring = Array.from(this.selectedEquipment).join(',');
 
-    const payload = {
-      match_id: matchId,
-      meeting_time: document.getElementById('conv-meeting').value,
-      kit_info: document.getElementById('conv-kit').value,
-      what_to_bring: whatToBring,
-      notes: document.getElementById('conv-notes').value
-    };
+  const payload = {
+    match_id: matchId,
+    meeting_time: document.getElementById('conv-meeting').value,
+    kit_info: document.getElementById('conv-kit').value,
+    what_to_bring: whatToBring,
+    notes: document.getElementById('conv-notes').value
+  };
 
-    try {
-      if (this.currentConvocationId) {
-        const { error } = await db.from('convocations').update(payload).eq('id', this.currentConvocationId);
-        if (error) throw error;
-
-        await db.from('convocation_players').delete().eq('convocation_id', this.currentConvocationId);
-        const playerRows = Array.from(this.selectedPlayers).map(pid => ({
-          convocation_id: this.currentConvocationId,
-          player_id: pid,
-          selected: true
-        }));
-        if (playerRows.length > 0) {
-          const { error: pErr } = await db.from('convocation_players').insert(playerRows);
-          if (pErr) throw pErr;
-        }
-      } else {
-        const { data, error } = await db.from('convocations').insert(payload).select().single();
-        if (error) throw error;
-        this.currentConvocationId = data.id;
-
-        const playerRows = Array.from(this.selectedPlayers).map(pid => ({
-          convocation_id: data.id,
-          player_id: pid,
-          selected: true
-        }));
-        if (playerRows.length > 0) {
-          const { error: pErr } = await db.from('convocation_players').insert(playerRows);
-          if (pErr) throw pErr;
-        }
+  try {
+    if (this.currentConvocationId) {
+      const { error } = await db.from('convocations').update(payload).eq('id', this.currentConvocationId);
+      if (error) throw error;
+      
+      await db.from('convocation_players').delete().eq('convocation_id', this.currentConvocationId);
+      const playerRows = Array.from(this.selectedPlayers).map(pid => ({
+        convocation_id: this.currentConvocationId,
+        player_id: pid,
+        selected: true
+      }));
+      if (playerRows.length > 0) {
+        const { error: pErr } = await db.from('convocation_players').insert(playerRows);
+        if (pErr) throw pErr;
       }
-      toast('Convocazione salvata! ✅', 'success');
-    } catch (err) {
-      toast('Errore salvataggio: ' + err.message, 'error');
+    } else {
+      const { data, error } = await db.from('convocations').insert(payload).select().single();
+      if (error) throw error;
+      this.currentConvocationId = data.id;
+      
+      const playerRows = Array.from(this.selectedPlayers).map(pid => ({
+        convocation_id: data.id,
+        player_id: pid,
+        selected: true
+      }));
+      if (playerRows.length > 0) {
+        const { error: pErr } = await db.from('convocation_players').insert(playerRows);
+        if (pErr) throw pErr;
+      }
     }
-  },
+    
+    toast('Convocazione salvata! ✅', 'success');
+    
+    // ✅ INVIA NOTIFICA PUSH SOLO AI GENITORI DEI GIOCATORI CONVOCATI
+    if (this.selectedPlayers.size > 0) {
+      this.sendConvocationNotification(Array.from(this.selectedPlayers));
+    }
+    
+  } catch (err) {
+    toast('Errore salvataggio: ' + err.message, 'error');
+  }
+},
+
+// ✅ NUOVA FUNZIONE: Invia notifica push ai genitori dei convocati
+async sendConvocationNotification(playerIds) {
+  try {
+    console.log('📤 Invio notifica convocazione ai player:', playerIds);
+    
+    // Recupera i parent_id dei giocatori convocati
+    const { data: playersData, error } = await db
+      .from('players')
+      .select('id, parent_id, parent_id_2, first_name, last_name')
+      .in('id', playerIds);
+    
+    if (error) {
+      console.error('Errore recupero player:', error);
+      return;
+    }
+    
+    // Estrai tutti i parent_id unici (sia parent_id che parent_id_2)
+    const parentIds = new Set();
+    playersData.forEach(p => {
+      if (p.parent_id) parentIds.add(p.parent_id);
+      if (p.parent_id_2) parentIds.add(p.parent_id_2);
+    });
+    
+    const userIds = Array.from(parentIds);
+    
+    if (userIds.length === 0) {
+      console.warn('Nessun parent_id trovato per i player selezionati');
+      return;
+    }
+    
+    console.log('📤 Invio notifica a user_id:', userIds);
+    
+    // Ottieni i dettagli della partita per il messaggio
+    const matchOption = document.getElementById('conv-match').selectedOptions[0];
+    const matchText = matchOption ? matchOption.textContent.split('·')[1]?.trim() || 'prossima partita' : 'prossima partita';
+    const meeting = document.getElementById('conv-meeting').value;
+    
+    const title = '📋 Nuova Convocazione';
+    const message = `Sei stato convocato per ${matchText}\n⏰ Ritrovo: ${meeting || '--:--'}\nControlla i dettagli nell'app!`;
+    
+    // Invia la notifica solo agli user_id selezionati
+    const success = await PushManager.sendNotification(title, message, { userIds });
+    
+    if (success) {
+      console.log('✅ Notifica push inviata a', userIds.length, 'genitori');
+    }
+  } catch (err) {
+    console.error('❌ Errore invio notifica convocazione:', err);
+  }
+},
 
   copyMessage() {
     const msg = document.getElementById('msg-preview').value;
