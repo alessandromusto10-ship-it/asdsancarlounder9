@@ -189,66 +189,75 @@ Router.register('/championship', () => ChampionshipPage.render());
 
 // ===== INIT =====
 async function init() {
-  try {
-    const auth = await Auth.getCurrentUser();
-    
-    if (auth?.user) {
-      // Se l'utente è loggato ma non ha profilo, prova a crearlo (caso login Google mister)
-      if (!auth.profile) {
-        console.log('🔍 Utente senza profilo, verifico se è un mister...');
-        try {
-          const misterProfile = await Auth.ensureMisterProfile(auth.user);
-          if (misterProfile) {
-            console.log('✅ Profilo mister creato/verificato');
-            const updatedAuth = await Auth.getCurrentUser();
-            if (updatedAuth?.profile) {
-              $('#app-header')?.classList.remove('hidden');
-              $('#bottom-nav')?.classList.remove('hidden');
-              const userNameEl = $('#user-name');
-              if (userNameEl) {
-                userNameEl.textContent = updatedAuth.profile.full_name || updatedAuth.user.email;
-              }
-              renderNav(updatedAuth.profile.role);
-              Router.resolve();
-              return;
+  console.log('🔍 Init chiamato');
+  const auth = await Auth.getCurrentUser();
+  console.log(' Auth:', auth);
+  
+  if (auth?.user) {
+    if (!auth.profile) {
+      console.log('🔍 Utente senza profilo, verifico se è un mister...');
+      try {
+        const misterProfile = await Auth.ensureMisterProfile(auth.user);
+        if (misterProfile) {
+          console.log('✅ Profilo mister creato/verificato');
+          const updatedAuth = await Auth.getCurrentUser();
+          if (updatedAuth?.profile) {
+            $('#app-header')?.classList.remove('hidden');
+            $('#bottom-nav')?.classList.remove('hidden');
+            const userNameEl = $('#user-name');
+            if (userNameEl) {
+              userNameEl.textContent = updatedAuth.profile.full_name || updatedAuth.user.email;
             }
-          } else {
-            console.warn('⚠️ Email non autorizzata come mister, logout...');
-            await Auth.signOut();
-            toast('Accesso non autorizzato. Contatta l\'amministratore.', 'error');
-            $('#app-header')?.classList.add('hidden');
-            $('#bottom-nav')?.classList.add('hidden');
-            Router.navigate('/login');
+            renderNav(updatedAuth.profile.role);
+            Router.resolve();
             return;
           }
-        } catch (err) {
-          console.error('❌ Errore creazione profilo:', err);
+        } else {
+          console.warn('️ Email non autorizzata come mister, logout...');
           await Auth.signOut();
-          toast('Errore durante l\'accesso: ' + err.message, 'error');
+          toast('Accesso non autorizzato. Contatta l\'amministratore.', 'error');
+          $('#app-header')?.classList.add('hidden');
+          $('#bottom-nav')?.classList.add('hidden');
           Router.navigate('/login');
           return;
         }
+      } catch (err) {
+        console.error('❌ Errore creazione profilo:', err);
+        await Auth.signOut();
+        toast('Errore durante l\'accesso: ' + err.message, 'error');
+        Router.navigate('/login');
+        return;
       }
-      
-      // Profilo esistente (genitore o mister già configurato)
-      $('#app-header')?.classList.remove('hidden');
-      $('#bottom-nav')?.classList.remove('hidden');
-      const userNameEl = $('#user-name');
-      if (userNameEl) {
-        userNameEl.textContent = auth.profile.full_name || auth.user.email;
-      }
-      renderNav(auth.profile.role);
-    } else {
-      $('#app-header')?.classList.add('hidden');
-      $('#bottom-nav')?.classList.add('hidden');
     }
     
-    Router.resolve();
-  } catch (err) {
-    console.error('❌ Errore init:', err);
-    Router.resolve();
+    $('#app-header')?.classList.remove('hidden');
+    $('#bottom-nav')?.classList.remove('hidden');
+    const userNameEl = $('#user-name');
+    if (userNameEl) {
+      userNameEl.textContent = auth.profile.full_name || auth.user.email;
+    }
+    renderNav(auth.profile.role);
+  } else {
+    $('#app-header')?.classList.add('hidden');
+    $('#bottom-nav')?.classList.add('hidden');
   }
+  Router.resolve();
 }
+
+// ✅ Aspetta che la sessione sia caricata prima di init
+db.auth.getSession().then(({ data: { session } }) => {
+  console.log('📋 Sessione caricata:', session?.user?.email || 'nessuna');
+  init();
+});
+
+db.auth.onAuthStateChange((event, session) => {
+  console.log(' Auth state change:', event);
+  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+    init();
+  } else if (event === 'SIGNED_OUT') {
+    Router.navigate('/login');
+  }
+});
 
 // ✅ Listener migliorato: gestisce solo eventi specifici
 db.auth.onAuthStateChange((event, session) => {
