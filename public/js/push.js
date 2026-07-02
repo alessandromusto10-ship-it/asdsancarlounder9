@@ -18,12 +18,20 @@ const PushManager = {
       
       console.log('✅ PushManager: utente loggato, inizializzo OneSignal...');
 
-      // ✅ Carica OneSignal SDK dinamicamente
+      // ✅ Carica dinamicamente lo script OneSignal SDK
       if (!window.OneSignalDeferred) {
         window.OneSignalDeferred = window.OneSignalDeferred || [];
+        
+        // Carica lo script SDK
+        const script = document.createElement('script');
+        script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
+        script.async = true;
+        document.head.appendChild(script);
+        
+        console.log('📥 Caricamento script OneSignal...');
       }
 
-      // ✅ Inizializza OneSignal ORA (dopo il login)
+      // ✅ Inizializza OneSignal
       window.OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
           appId: PushManager.APP_ID,
@@ -47,10 +55,14 @@ const PushManager = {
           }
         });
 
-        // Se già concesso, salva subito
-        const perm = OneSignal.Notifications.permission;
-        console.log('📋 Current permission:', perm);
-        if (perm === 'granted' || perm === true) {
+        // Chiedi il permesso se non è ancora stato dato
+        const permission = await OneSignal.Notifications.getPermission();
+        console.log('📋 Current permission:', permission);
+        
+        if (permission === 'default') {
+          console.log('⏳ Permesso non ancora richiesto, chiedo...');
+          // OneSignal chiederà automaticamente il permesso
+        } else if (permission === 'granted' || permission === true) {
           console.log('✅ Permesso già concesso, salvo subscription');
           setTimeout(() => PushManager.saveSubscription(), 1500);
         }
@@ -70,7 +82,6 @@ const PushManager = {
         return;
       }
 
-      // ✅ SDK v16: sono PROPRIETÀ, non metodi
       const userId = OneSignal.User.PushSubscription.id;
       const optIn = OneSignal.User.PushSubscription.optedIn;
 
