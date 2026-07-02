@@ -162,7 +162,7 @@ function renderNav(role) {
         <span class="nav-icon">⚽</span><span>Partite</span>
       </button>
       <button class="nav-item" data-path="/standings" onclick="Router.navigate('/standings')">
-        <span class="nav-icon"></span><span>Classifica</span>
+        <span class="nav-icon">🥇</span><span>Classifica</span>
       </button>
       <button class="nav-item" data-path="/attendance" onclick="Router.navigate('/attendance')">
         <span class="nav-icon">✅</span><span>Presenze</span>
