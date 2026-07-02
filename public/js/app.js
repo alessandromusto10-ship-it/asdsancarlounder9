@@ -192,7 +192,6 @@ Router.register('/championship', () => ChampionshipPage.render());
 // ===== INIT =====
 async function init() {
   const auth = await Auth.getCurrentUser();
-  
   if (auth?.user) {
     // Se l'utente è loggato ma non ha profilo, prova a crearlo (caso login Google mister)
     if (!auth.profile) {
@@ -216,7 +215,7 @@ async function init() {
         } else {
           console.warn('⚠️ Email non autorizzata come mister, logout...');
           await Auth.signOut();
-          toast('Accesso non autorizzato. Contatta l\'amministratore.', 'error');
+          toast('Accesso non autorizzato. Contatta l'amministratore.', 'error');
           $('#app-header')?.classList.add('hidden');
           $('#bottom-nav')?.classList.add('hidden');
           Router.navigate('/login');
@@ -230,7 +229,6 @@ async function init() {
         return;
       }
     }
-    
     // Profilo esistente (genitore o mister già configurato)
     $('#app-header')?.classList.remove('hidden');
     $('#bottom-nav')?.classList.remove('hidden');
@@ -243,11 +241,32 @@ async function init() {
     $('#app-header')?.classList.add('hidden');
     $('#bottom-nav')?.classList.add('hidden');
   }
-  
   Router.resolve();
 }
 
-db.auth.onAuthStateChange(() => init());
+// ✅ Listener migliorato: gestisce solo eventi specifici
+db.auth.onAuthStateChange((event, session) => {
+  console.log(' Auth state change:', event);
+  
+  // ✅ Solo SIGNED_OUT esplicito (quando l'utente fa logout)
+  if (event === 'SIGNED_OUT') {
+    console.log('👋 Logout effettuato');
+    $('#app-header')?.classList.add('hidden');
+    $('#bottom-nav')?.classList.add('hidden');
+    Router.navigate('/login');
+  }
+  // ✅ TOKEN_REFRESHED: non fare nulla, la sessione resta attiva
+  else if (event === 'TOKEN_REFRESHED') {
+    console.log('🔄 Token aggiornato, sessione mantenuta');
+  }
+  // ✅ USER_UPDATED: aggiorna la UI se necessario
+  else if (event === 'USER_UPDATED') {
+    console.log('👤 Utente aggiornato');
+    init();
+  }
+});
+
+// ✅ Init iniziale
 init();
 
 // Esponi utility globali
