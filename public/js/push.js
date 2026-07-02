@@ -13,26 +13,28 @@ const PushManager = {
     window.OneSignalDeferred.push(async (OneSignal) => {
       console.log('✅ OneSignal caricato');
       
-      // Ascolta i cambiamenti di subscription
-      OneSignal.Notifications.addEventListener('subscriptionChange', (isSubscribed) => {
-        console.log(' Subscription change:', isSubscribed);
-        if (isSubscribed) {
-          this.saveSubscription();
-        }
-      });
-
-      // Controlla se già sottoscritto
+      // ✅ CORRETTO: Usa il metodo asincrono per controllare i permessi
       try {
-        const permission = OneSignal.Notifications.permission;
+        const permission = await OneSignal.Notifications.getPermission();
         console.log('🔔 Permesso notifiche:', permission);
         
         if (permission === 'granted') {
           console.log('✅ Permesso già concesso, salvo subscription');
-          await this.saveSubscription();
+          // Aspetta un attimo che OneSignal abbia l'ID
+          setTimeout(() => this.saveSubscription(), 2000);
         }
       } catch (err) {
         console.error('❌ Errore nel controllo permessi:', err);
       }
+
+      // ✅ CORRETTO: Ascolta quando l'utente accetta le notifiche
+      OneSignal.Notifications.addEventListener('permissionChange', (permission) => {
+        console.log('🔔 Permission change:', permission);
+        if (permission === 'granted') {
+          // Aspetta un attimo che OneSignal abbia l'ID
+          setTimeout(() => this.saveSubscription(), 2000);
+        }
+      });
     });
   },
 
@@ -46,15 +48,18 @@ const PushManager = {
         return;
       }
 
-      // Metodi corretti per OneSignal SDK v16
-      const userId = OneSignal.User.PushSubscription.id;
-      const optIn = OneSignal.User.PushSubscription.optedIn;
+      // ✅ CORRETTO: Usa i metodi asincroni per OneSignal SDK v16
+      const userId = await OneSignal.User.PushSubscription.getId();
+      const token = await OneSignal.User.PushSubscription.getToken();
+      const optIn = await OneSignal.User.PushSubscription.getOptedIn();
 
       console.log('📋 OneSignal User ID:', userId);
+      console.log('📋 Token:', token);
       console.log('📋 Opt-in status:', optIn);
 
       if (!userId || !optIn) {
         console.warn('⚠️ Nessun userId o opt-in false');
+        console.log('Current PushSubscription:', OneSignal.User.PushSubscription);
         return;
       }
 
