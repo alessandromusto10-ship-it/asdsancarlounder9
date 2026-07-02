@@ -57,11 +57,17 @@ const PushManager = {
           console.log('👤 Nuovo utente rilevato:', user.id);
           this.currentUserId = user.id;
 
-          // Se il permesso è già concesso, salva la subscription
+          // ✅ Controlla se OneSignal è pronto e il permesso è già concesso
           const OneSignal = window.OneSignal;
-          if (OneSignal && OneSignal.Notifications.permission === 'granted') {
-            console.log('✅ Permesso già concesso, salvo subscription per nuovo utente');
-            setTimeout(() => this.saveSubscription(), 1500);
+          if (OneSignal) {
+            const perm = OneSignal.Notifications.permission;
+            console.log('📋 Permission per nuovo utente:', perm);
+            
+            if (perm === 'granted' || perm === true) {
+              console.log('✅ Permesso già concesso, salvo subscription per nuovo utente');
+              // Aspetta un attimo che OneSignal abbia l'ID
+              setTimeout(() => this.saveSubscription(), 2000);
+            }
           }
         } else if (!user && this.currentUserId) {
           // Utente ha fatto logout
@@ -118,6 +124,8 @@ const PushManager = {
       let deviceType = 'Web';
       if (/android/i.test(ua)) deviceType = 'Android';
       else if (/iphone|ipad|ipod/i.test(ua)) deviceType = 'iOS';
+
+      console.log('📱 Device type:', deviceType);
 
       const { data, error } = await db
         .from('push_subscriptions')
