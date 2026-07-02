@@ -1,43 +1,54 @@
-// ===== GESTIONE NOTIFICHE PUSH CON ONESIGNAL SDK v16 =====
+// ===== GESTIONE NOTIFICHE PUSH CON ONESIGNAL =====
 const PushManager = {
   APP_ID: 'e631ad4f-de2c-4747-83fa-34da6f85b8e0',
+  initialized: false,
 
   async init() {
-    console.log('🔔 PushManager: init...');
-    
-    if (!window.OneSignal) {
-      console.warn('⚠️ OneSignal non disponibile');
-      return;
-    }
+    // ✅ Aspetta che l'utente sia loggato (polling ogni 500ms)
+    const checkAuth = async () => {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) {
+        console.log('⏳ PushManager: aspetto login...');
+        setTimeout(checkAuth, 500);
+        return;
+      }
 
-    const OneSignal = window.OneSignal;
+      if (this.initialized) return;
+      this.initialized = true;
 
-    // ✅ SDK v16: i metodi sono PROPRIETÀ, non funzioni
-    console.log('📋 PushSubscription.id:', OneSignal.User?.PushSubscription?.id);
-    console.log('📋 PushSubscription.optedIn:', OneSignal.User?.PushSubscription?.optedIn);
-    console.log('📋 Notifications.permission:', OneSignal.Notifications?.permission);
+      console.log('✅ PushManager: utente loggato, inizializzo...');
 
-    // ✅ Ascolta quando cambia la subscription
-    OneSignal.Notifications.addEventListener('subscriptionChange', (isSubscribed) => {
-      console.log('🔔 subscriptionChange:', isSubscribed);
-      if (isSubscribed) {
+      if (!window.OneSignal) {
+        console.warn('⚠️ OneSignal non disponibile');
+        return;
+      }
+
+      const OneSignal = window.OneSignal;
+
+      // Ascolta quando cambia la subscription
+      OneSignal.Notifications.addEventListener('subscriptionChange', (isSubscribed) => {
+        console.log('🔔 subscriptionChange:', isSubscribed);
+        if (isSubscribed) {
+          setTimeout(() => this.saveSubscription(), 1500);
+        }
+      });
+
+      // Ascolta quando cambia il permesso
+      OneSignal.Notifications.addEventListener('permissionChange', (permission) => {
+        console.log('🔔 permissionChange:', permission);
+        if (permission === 'granted') {
+          setTimeout(() => this.saveSubscription(), 1500);
+        }
+      });
+
+      // Se già concesso, salva subito
+      if (OneSignal.Notifications.permission === 'granted') {
+        console.log('✅ Permesso già concesso, salvo subscription');
         setTimeout(() => this.saveSubscription(), 1500);
       }
-    });
+    };
 
-    // ✅ Ascolta quando cambia il permesso
-    OneSignal.Notifications.addEventListener('permissionChange', (permission) => {
-      console.log('🔔 permissionChange:', permission);
-      if (permission === 'granted') {
-        setTimeout(() => this.saveSubscription(), 1500);
-      }
-    });
-
-    // ✅ Se già concesso, salva subito
-    if (OneSignal.Notifications.permission === 'granted') {
-      console.log('✅ Permesso già concesso, salvo subscription');
-      setTimeout(() => this.saveSubscription(), 1500);
-    }
+    checkAuth();
   },
 
   async saveSubscription() {
@@ -50,7 +61,6 @@ const PushManager = {
         return;
       }
 
-      // ✅ SDK v16: sono PROPRIETÀ, non metodi
       const userId = OneSignal.User.PushSubscription.id;
       const optIn = OneSignal.User.PushSubscription.optedIn;
 
@@ -67,7 +77,6 @@ const PushManager = {
         return;
       }
 
-      // Verifica che l'utente sia loggato
       const { data: { user } } = await db.auth.getUser();
       if (!user) {
         console.warn('⚠️ Utente non loggato');
@@ -76,7 +85,6 @@ const PushManager = {
 
       console.log('👤 User ID Supabase:', user.id);
 
-      // Rileva dispositivo
       const ua = navigator.userAgent;
       let deviceType = 'Web';
       if (/android/i.test(ua)) deviceType = 'Android';
@@ -84,7 +92,6 @@ const PushManager = {
 
       console.log('📱 Device type:', deviceType);
 
-      // Salva nel database
       const { data, error } = await db
         .from('push_subscriptions')
         .upsert({
