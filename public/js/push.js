@@ -1,68 +1,79 @@
 // ===== GESTIONE NOTIFICHE PUSH CON ONESIGNAL =====
 const PushManager = {
   APP_ID: 'e631ad4f-de2c-4747-83fa-34da6f85b8e0',
-  initialized: false,
+  currentUserId: null,
 
   async init() {
-    const checkAuth = async () => {
-      const { data: { user } } = await db.auth.getUser();
-      if (!user) {
-        console.log('⏳ PushManager: aspetto login...');
-        setTimeout(checkAuth, 500);
-        return;
-      }
+    console.log('🔔 PushManager: init...');
 
-      if (this.initialized) return;
-      this.initialized = true;
-      
-      console.log('✅ PushManager: utente loggato, inizializzo OneSignal...');
+    // ✅ Carica OneSignal SDK dinamicamente se non è già caricato
+    if (!window.OneSignalDeferred) {
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      const script = document.createElement('script');
+      script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
+      script.async = true;
+      document.head.appendChild(script);
+      console.log('📥 Caricamento script OneSignal...');
+    }
 
-      if (!window.OneSignalDeferred) {
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        
-        const script = document.createElement('script');
-        script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
-        script.async = true;
-        document.head.appendChild(script);
-        
-        console.log('📥 Caricamento script OneSignal...');
-      }
+    // ✅ Aspetta che OneSignal sia pronto
+    window.OneSignalDeferred.push(async (OneSignal) => {
+      await OneSignal.init({ appId: PushManager.APP_ID });
+      console.log('✅ OneSignal inizializzato');
 
-      window.OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
-          appId: PushManager.APP_ID,
-        });
-
-        console.log('✅ OneSignal inizializzato');
-
-        // ✅ CORRETTO: Ascolta quando cambia la subscription
-        OneSignal.Notifications.addEventListener('subscriptionChange', (isSubscribed) => {
-          console.log('🔔 subscriptionChange:', isSubscribed);
-          if (isSubscribed) {
-            // Aspetta 2 secondi che OneSignal generi l'ID
-            setTimeout(() => PushManager.saveSubscription(), 2000);
-          }
-        });
-
-        // ✅ CORRETTO: Ascolta quando cambia il permesso
-        OneSignal.Notifications.addEventListener('permissionChange', (permission) => {
-          console.log('🔔 permissionChange:', permission);
-          if (permission === 'granted' || permission === true) {
-            // Aspetta 2 secondi che OneSignal generi l'ID
-            setTimeout(() => PushManager.saveSubscription(), 2000);
-          }
-        });
-
-        // ✅ CORRETTO: Usa la proprietà .permission, NON il metodo getPermission()
-        const perm = OneSignal.Notifications.permission;
-        console.log('📋 Current permission:', perm);
-        
-        if (perm === 'granted' || perm === true) {
-          console.log('✅ Permesso già concesso, aspetto ID...');
-          // Aspetta che OneSignal generi l'ID
+      // Ascolta quando cambia la subscription
+      OneSignal.Notifications.addEventListener('subscriptionChange', (isSubscribed) => {
+        console.log('🔔 subscriptionChange:', isSubscribed);
+        if (isSubscribed) {
           setTimeout(() => PushManager.saveSubscription(), 2000);
         }
       });
+
+      // Ascolta quando cambia il permesso
+      OneSignal.Notifications.addEventListener('permissionChange', (permission) => {
+        console.log('🔔 permissionChange:', permission);
+        if (permission === 'granted' || permission === true) {
+          setTimeout(() => PushManager.saveSubscription(), 2000);
+        }
+      });
+
+      // ✅ Controlla il permesso corrente
+      const perm = OneSignal.Notifications.permission;
+      console.log('📋 Current permission:', perm);
+
+      // ✅ Inizia a monitorare il login/logout
+      PushManager.startAuthMonitor();
+    });
+  },
+
+  // ✅ MONITORA IL LOGIN/LOGOUT E SALVA LA SUBSCRIPTION PER OGNI UTENTE
+  startAuthMonitor() {
+    const checkAuth = async () => {
+      try {
+        const { data: { user } } = await db.auth.getUser();
+        
+        if (user && user.id !== this.currentUserId) {
+          // Nuovo utente loggato (o primo login)
+          console.log('👤 Nuovo utente rilevato:', user.id);
+          this.currentUserId = user.id;
+
+          // Se il permesso è già concesso, salva la subscription
+          const OneSignal = window.OneSignal;
+          if (OneSignal && OneSignal.Notifications.permission === 'granted') {
+            console.log('✅ Permesso già concesso, salvo subscription per nuovo utente');
+            setTimeout(() => this.saveSubscription(), 1500);
+          }
+        } else if (!user && this.currentUserId) {
+          // Utente ha fatto logout
+          console.log('👋 Utente ha fatto logout');
+          this.currentUserId = null;
+        }
+      } catch (err) {
+        console.error('Errore checkAuth:', err);
+      }
+
+      // Controlla ogni 2 secondi
+      setTimeout(checkAuth, 2000);
     };
 
     checkAuth();
@@ -78,7 +89,6 @@ const PushManager = {
         return;
       }
 
-      // ✅ CORRETTO: OneSignal SDK v16 usa PROPRIETÀ, non metodi
       const userId = OneSignal.User.PushSubscription.id;
       const optIn = OneSignal.User.PushSubscription.optedIn;
 
@@ -86,8 +96,7 @@ const PushManager = {
       console.log('📋 Opt-in status:', optIn);
 
       if (!userId) {
-        console.warn('⚠️ Nessun userId disponibile, aspetto...');
-        // Riprova dopo 1 secondo
+        console.warn('⚠️ Nessun userId disponibile, riprovo...');
         setTimeout(() => this.saveSubscription(), 1000);
         return;
       }
@@ -110,8 +119,6 @@ const PushManager = {
       if (/android/i.test(ua)) deviceType = 'Android';
       else if (/iphone|ipad|ipod/i.test(ua)) deviceType = 'iOS';
 
-      console.log('📱 Device type:', deviceType);
-
       const { data, error } = await db
         .from('push_subscriptions')
         .upsert({
@@ -126,7 +133,7 @@ const PushManager = {
       if (error) {
         console.error('❌ Errore DB:', error);
       } else {
-        console.log('✅ Subscription salvata!', data);
+        console.log('✅ Subscription salvata per utente:', user.id, data);
       }
     } catch (err) {
       console.error('❌ Errore saveSubscription:', err);
@@ -156,6 +163,7 @@ const PushManager = {
 
 window.PushManager = PushManager;
 
+// Auto-init
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => PushManager.init());
 } else {
