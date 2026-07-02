@@ -162,9 +162,7 @@ const PushManager = {
         return false;
       }
 
-      const supabaseUrl = window.location.origin.includes('localhost') 
-        ? 'https://ydcxrzdlmrprvhefnctj.supabase.co' 
-        : window.location.origin;
+      const supabaseProjectUrl = 'https://ydcxrzdlmrprvhefnctj.supabase.co';
 
       const edgeFunctionUrl = `${supabaseUrl}/functions/v1/send-push-notification`;
       console.log('📤 Edge Function URL:', edgeFunctionUrl);
