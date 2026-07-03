@@ -6,11 +6,6 @@ const CalendarPage = {
     const view = document.getElementById('view');
     view.innerHTML = `
       <h2 style="color: var(--granata); margin-bottom: 16px;">📅 Calendario</h2>
-      <!-- Sezione "Questa Settimana" -->
-      <div class="card" id="this-week-section" style="margin-bottom: 16px;">
-        <div class="card-title">📋 Questa Settimana</div>
-        <div id="week-events" style="min-height: 60px;"></div>
-      </div>
       <!-- Navigazione Mese -->
       <div class="flex-between mb-4" style="display: flex; justify-content: space-between; align-items: center;">
         <button class="icon-btn" id="prev-month" style="background: var(--gray-200); cursor: pointer;">◀</button>
@@ -19,12 +14,10 @@ const CalendarPage = {
       </div>
       <!-- Griglia Calendario -->
       <div class="calendar-grid" id="calendar-grid"></div>
-      <!-- Lista Eventi del Giorno Selezionato -->
-      <div id="day-events-container" class="mt-4" style="display: none;">
-        <div class="card">
-          <div class="card-title" id="day-events-title">📋 Eventi del giorno</div>
-          <div id="day-events-list"></div>
-        </div>
+      <!-- Sezione "Questa Settimana" (SOTTO il calendario) -->
+      <div class="card" id="this-week-section" style="margin-top: 16px;">
+        <div class="card-title">📋 Questa Settimana</div>
+        <div id="week-events" style="min-height: 60px;"></div>
       </div>
     `;
     
@@ -47,15 +40,9 @@ const CalendarPage = {
       this.currentYear++;
     }
     this.loadMonthCalendar();
-    // Aggiorna anche "Questa Settimana" quando cambi mese
-    this.loadWeekForMonth();
-  },
-  
-  // Carica la settimana relativa al mese visualizzato
-  async loadWeekForMonth() {
-    // Calcola la settimana che contiene il 1° del mese visualizzato
-    const firstDayOfMonth = new Date(this.currentYear, this.currentMonth, 1);
-    this.loadWeekEvents(firstDayOfMonth);
+    // ✅ FIX: Mantieni la settimana corrente, non quella del 1° del mese
+    // Non chiamare loadWeekForMonth(), lascia che loadWeekEvents() usi la data corrente
+    this.loadWeekEvents();
   },
   
   async loadMonthCalendar() {
@@ -78,7 +65,7 @@ const CalendarPage = {
     if (tErr || !teamData) return;
     const sanCarloId = teamData.id;
     
-    // Calcola correttamente l'ultimo giorno del mese
+    // ✅ FIX: Calcola correttamente l'ultimo giorno del mese
     const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
     
     // Recupera allenamenti del mese
@@ -143,9 +130,9 @@ const CalendarPage = {
       const isToday = isCurrentMonth && day === todayDate;
       const hasEvents = eventsMap[day] && eventsMap[day].length > 0;
       const eventCount = eventsMap[day] ? eventsMap[day].length : 0;
+      // ✅ FIX: Rimuovi onclick, i puntini sono solo indicativi
       html += `
-        <div class="calendar-day ${isToday ? 'today' : ''} ${hasEvents ? 'has-events' : ''}" 
-             onclick="CalendarPage.showDayEvents(${day})" style="cursor: pointer;">
+        <div class="calendar-day ${isToday ? 'today' : ''} ${hasEvents ? 'has-events' : ''}">
           <span class="day-number">${day}</span>
           ${hasEvents ? `<div class="event-dots">${'•'.repeat(Math.min(eventCount, 3))}</div>` : ''}
         </div>
@@ -153,77 +140,12 @@ const CalendarPage = {
     }
     
     container.innerHTML = html;
-    // Salva eventiMap per uso in showDayEvents
-    this.eventsMap = eventsMap;
   },
   
-  async showDayEvents(day) {
-    const container = document.getElementById('day-events-container');
-    const title = document.getElementById('day-events-title');
-    const list = document.getElementById('day-events-list');
-    
-    if (!this.eventsMap || !this.eventsMap[day]) {
-      container.style.display = 'none';
-      return;
-    }
-    
-    const events = this.eventsMap[day];
-    const monthNames = [
-      'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-      'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
-    ];
-    title.textContent = `📋 ${day} ${monthNames[this.currentMonth]} ${this.currentYear}`;
-    
-    let html = '';
-    events.forEach(ev => {
-      if (ev.type === 'training') {
-        const t = ev.data;
-        const dateObj = new Date(t.date);
-        const dayName = dateObj.toLocaleDateString('it-IT', { weekday: 'long' });
-        html += `
-          <div class="card" style="background: rgba(122,31,46,0.08); border-left: 4px solid var(--granata); margin-bottom: 8px;">
-            <div style="font-weight: 700; color: var(--granata);">🏃 Allenamento</div>
-            <div style="margin-top: 6px; font-size: 14px;">
-              📅 ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
-              ⏰ ${formatTime(t.time)}<br>
-              ${t.location ? '📍 ' + t.location + '<br>' : ''}
-              ${t.notes ? '📝 ' + t.notes : ''}
-            </div>
-          </div>
-        `;
-      } else if (ev.type === 'match') {
-        const m = ev.data;
-        const homeName = m.home_team?.name || 'Casa';
-        const awayName = m.away_team?.name || 'Ospite';
-        const score = (m.home_won_periods !== null && m.away_won_periods !== null)
-          ? `${m.home_won_periods} - ${m.away_won_periods}`
-          : 'vs';
-        const dateObj = new Date(m.match_date);
-        const dayName = dateObj.toLocaleDateString('it-IT', { weekday: 'long' });
-        html += `
-          <div class="card" style="background: rgba(245,158,11,0.08); border-left: 4px solid var(--warning); margin-bottom: 8px;">
-            <div style="font-weight: 700; color: var(--warning);">⚽ Partita · ${m.match_type === 'andata' ? 'Andata' : 'Ritorno'} G${m.matchday || '?'}</div>
-            <div style="margin-top: 6px; font-size: 14px;">
-              📅 ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
-              ⏰ ${m.match_time ? formatTime(m.match_time) : 'n.d.'}<br>
-              🏠 ${homeName} ${score} ${awayName}<br>
-              ${m.location ? '📍 ' + m.location : ''}
-            </div>
-          </div>
-        `;
-      }
-    });
-    
-    list.innerHTML = html;
-    container.style.display = 'block';
-    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  },
-  
-  // Carica la settimana corretta in base al mese visualizzato
+  // ✅ FIX: Carica la settimana corrente (non quella del mese visualizzato)
   async loadWeekEvents(startDate = null) {
     const container = document.getElementById('week-events');
-    // Se non viene passata una data, usa oggi (comportamento originale)
-    // Altrimenti usa la data passata (quando si cambia mese)
+    // Se non viene passata una data, usa oggi (comportamento corretto)
     const baseDate = startDate || new Date();
     
     // Calcola inizio e fine settimana (da lunedì a domenica)
@@ -233,6 +155,9 @@ const CalendarPage = {
     monday.setDate(baseDate.getDate() + mondayOffset);
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
+    
+    const startStr = monday.toISOString().split('T')[0];
+    const endStr = sunday.toISOString().split('T')[0];
     
     // Recupera ID squadra S. Carlo
     const { data: teamData, error: tErr } = await db
@@ -254,22 +179,22 @@ const CalendarPage = {
     const maxAttempts = 4; // massimo 4 settimane avanti
     
     while (attempts < maxAttempts && events.length === 0) {
-      const startStr = currentMonday.toISOString().split('T')[0];
-      const endStr = currentSunday.toISOString().split('T')[0];
+      const weekStartStr = currentMonday.toISOString().split('T')[0];
+      const weekEndStr = currentSunday.toISOString().split('T')[0];
       
       // Recupera allenamenti della settimana
       const { data: trainings, error: trErr } = await db
         .from('trainings')
         .select('*')
-        .gte('date', startStr)
-        .lte('date', endStr);
+        .gte('date', weekStartStr)
+        .lte('date', weekEndStr);
       
       // Recupera partite della settimana
       const { data: matches, error: mErr } = await db
         .from('matches')
         .select(`*, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`)
-        .gte('match_date', startStr)
-        .lte('match_date', endStr)
+        .gte('match_date', weekStartStr)
+        .lte('match_date', weekEndStr)
         .or(`home_team_id.eq.${sanCarloId},away_team_id.eq.${sanCarloId}`);
       
       if (trErr || mErr) break;
