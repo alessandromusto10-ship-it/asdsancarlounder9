@@ -1,6 +1,6 @@
 const CalendarPage = {
   currentYear: new Date().getFullYear(),
-  currentMonth: new Date().getMonth(), // 0-11
+  currentMonth: new Date().getMonth(),
   
   async render() {
     const view = document.getElementById('view');
@@ -41,7 +41,7 @@ const CalendarPage = {
     this.loadWeekForMonth();
   },
   
-  // ✅ Scorre le settimane del mese e trova la PRIMA con eventi
+  // ✅ Trova la PRIMA settimana del mese che ha eventi
   async loadWeekForMonth() {
     const container = document.getElementById('week-events');
     
@@ -57,10 +57,10 @@ const CalendarPage = {
     const firstDayOfMonth = new Date(this.currentYear, this.currentMonth, 1);
     const lastDayOfMonth = new Date(this.currentYear, this.currentMonth + 1, 0);
     
-    // Scorri tutte le settimane del mese (max 5)
+    // Scorri le settimane del mese (max 5)
     let currentWeekStart = new Date(firstDayOfMonth);
     for (let week = 0; week < 5; week++) {
-      // Calcola lunedì e domenica della settimana corrente
+      // Calcola lunedì e domenica della settimana
       const dayOfWeek = currentWeekStart.getDay();
       const mondayOffset = dayOfWeek === 0 ? 0 : 1 - dayOfWeek;
       const monday = new Date(currentWeekStart);
@@ -74,14 +74,14 @@ const CalendarPage = {
       const startStr = monday.toISOString().split('T')[0];
       const endStr = sunday.toISOString().split('T')[0];
       
-      // Recupera ALLENAMENTI della settimana
+      // Recupera ALLENAMENTI
       const { data: trainings, error: trErr } = await db
         .from('trainings')
         .select('*')
         .gte('date', startStr)
         .lte('date', endStr);
       
-      // Recupera PARTITE della settimana
+      // Recupera PARTITE
       const { data: matches, error: mErr } = await db
         .from('matches')
         .select(`*, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`)
@@ -97,7 +97,7 @@ const CalendarPage = {
       if (matches) matches.forEach(m => events.push({ type: 'match', data: m, date: m.match_date }));
       events.sort((a, b) => new Date(a.date) - new Date(b.date));
       
-      // ✅ Se trovi eventi, mostrali e ESCI
+      // Se trovi eventi, mostrali
       if (events.length > 0) {
         this.renderWeekEvents(events);
         return;
@@ -107,7 +107,7 @@ const CalendarPage = {
       currentWeekStart.setDate(currentWeekStart.getDate() + 7);
     }
     
-    // Nessun evento in tutto il mese
+    // Nessun evento
     container.innerHTML = '<p style="color: var(--gray-500); text-align: center; padding: 12px;">Nessun evento programmato questo mese</p>';
   },
   
@@ -177,12 +177,14 @@ const CalendarPage = {
     
     const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
     
+    // Recupera ALLENAMENTI del mese
     const { data: trainings, error: trErr } = await db
       .from('trainings')
       .select('*')
       .gte('date', `${this.currentYear}-${String(this.currentMonth + 1).padStart(2, '0')}-01`)
       .lte('date', `${this.currentYear}-${String(this.currentMonth + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`);
     
+    // Recupera PARTITE del mese
     const { data: matches, error: mErr } = await db
       .from('matches')
       .select(`*, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`)
@@ -195,6 +197,7 @@ const CalendarPage = {
       return;
     }
     
+    // Costruisci mappa eventi
     const eventsMap = {};
     if (trainings) {
       trainings.forEach(t => {
@@ -211,6 +214,7 @@ const CalendarPage = {
       });
     }
     
+    // Genera griglia
     const firstDayOfWeek = new Date(this.currentYear, this.currentMonth, 1).getDay();
     const daysInMonth = lastDay;
     const today = new Date();
