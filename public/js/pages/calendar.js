@@ -6,27 +6,27 @@ const CalendarPage = {
     const view = document.getElementById('view');
     view.innerHTML = `
       <h2 style="color: var(--granata); margin-bottom: 16px;">📅 Calendario</h2>
-      <!-- Sezione "Questa Settimana" -->
-       <div class="card" id="this-week-section" style="margin-bottom: 16px;">
-         <div class="card-title">📋 Questa Settimana</div>
-         <div id="week-events" style="min-height: 60px;"></div>
-       </div>
-       <!-- Navigazione Mese -->
-       <div class="flex-between mb-4">
-         <button class="icon-btn" id="prev-month" style="background: var(--gray-200);">◀</button>
-         <h3 id="current-month-label" style="color: var(--granata);"></h3>
-         <button class="icon-btn" id="next-month" style="background: var(--gray-200);">▶</button>
-       </div>
-       <!-- Griglia Calendario -->
-       <div class="calendar-grid" id="calendar-grid"></div>
-       <!-- Lista Eventi del Giorno Selezionato -->
-       <div id="day-events-container" class="mt-4" style="display: none;">
-         <div class="card">
-           <div class="card-title" id="day-events-title">📋 Eventi del giorno</div>
-           <div id="day-events-list"></div>
-         </div>
-       </div>
-     `;
+      <!-- Navigazione Mese -->
+      <div class="flex-between mb-4">
+        <button class="icon-btn" id="prev-month" style="background: var(--gray-200);">◀</button>
+        <h3 id="current-month-label" style="color: var(--granata);"></h3>
+        <button class="icon-btn" id="next-month" style="background: var(--gray-200);">▶</button>
+      </div>
+      <!-- Griglia Calendario -->
+      <div class="calendar-grid" id="calendar-grid"></div>
+      <!-- Sezione "Questa Settimana" (SOTTO il calendario) -->
+      <div class="card" id="this-week-section" style="margin-top: 16px;">
+        <div class="card-title">📋 Questa Settimana</div>
+        <div id="week-events" style="min-height: 60px;"></div>
+      </div>
+      <!-- Lista Eventi del Giorno Selezionato -->
+      <div id="day-events-container" class="mt-4" style="display: none;">
+        <div class="card">
+          <div class="card-title" id="day-events-title">📋 Eventi del giorno</div>
+          <div id="day-events-list"></div>
+        </div>
+      </div>
+    `;
     
     // Event listeners
     document.getElementById('prev-month').addEventListener('click', () => this.changeMonth(-1));
@@ -47,11 +47,10 @@ const CalendarPage = {
       this.currentYear++;
     }
     this.loadMonthCalendar();
-    // ✅ FIX: Quando cambi mese, carica la prima settimana con eventi di QUEL mese
     this.loadWeekForMonth();
   },
   
-  // ✅ FIX: Trova la PRIMA settimana del mese visualizzato che ha eventi
+  // ✅ Trova la PRIMA settimana del mese visualizzato che ha eventi
   async loadWeekForMonth() {
     const container = document.getElementById('week-events');
     
@@ -68,7 +67,7 @@ const CalendarPage = {
     const firstDayOfMonth = new Date(this.currentYear, this.currentMonth, 1);
     const lastDayOfMonth = new Date(this.currentYear, this.currentMonth + 1, 0);
     
-    // ✅ Scorri le settimane del mese fino a trovare eventi (max 5 settimane)
+    // Scorri le settimane del mese fino a trovare eventi (max 5 settimane)
     let currentMonday = new Date(firstDayOfMonth);
     let attempts = 0;
     const maxAttempts = 5;
@@ -111,7 +110,7 @@ const CalendarPage = {
       if (matches) matches.forEach(m => events.push({ type: 'match', data: m, date: m.match_date }));
       events.sort((a, b) => new Date(a.date) - new Date(b.date));
       
-      // ✅ Se trovi eventi, mostrali e fermati
+      // Se trovi eventi, mostrali e fermati
       if (events.length > 0) {
         this.renderWeekEvents(events);
         return;
@@ -126,7 +125,7 @@ const CalendarPage = {
     container.innerHTML = '<p style="color: var(--gray-500); text-align: center; padding: 12px;">Nessun evento programmato questo mese</p>';
   },
   
-  // ✅ FIX: Renderizza gli eventi della settimana trovata
+  // Renderizza gli eventi della settimana trovata
   renderWeekEvents(events) {
     const container = document.getElementById('week-events');
     
