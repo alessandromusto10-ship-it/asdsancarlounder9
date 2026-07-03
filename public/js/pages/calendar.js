@@ -1,6 +1,6 @@
 const CalendarPage = {
   currentYear: new Date().getFullYear(),
-  currentMonth: new Date().getMonth(),
+  currentMonth: new Date().getMonth(), // 0-11
   
   async render() {
     const view = document.getElementById('view');
@@ -41,7 +41,7 @@ const CalendarPage = {
     this.loadWeekForMonth();
   },
   
-  // ✅ Trova la PRIMA settimana del mese che ha eventi
+  // ✅ Scorre le settimane del mese e trova la PRIMA con eventi
   async loadWeekForMonth() {
     const container = document.getElementById('week-events');
     
@@ -50,38 +50,61 @@ const CalendarPage = {
       .select('id')
       .eq('name', 'S. Carlo Milano')
       .single();
-    if (tErr || !teamData) return;
+    if (tErr || !teamData) {
+      container.innerHTML = '<p style="color: var(--danger);">Errore nel caricamento della squadra</p>';
+      return;
+    }
     const sanCarloId = teamData.id;
     
     // Calcola primo e ultimo giorno del mese
     const firstDayOfMonth = new Date(this.currentYear, this.currentMonth, 1);
     const lastDayOfMonth = new Date(this.currentYear, this.currentMonth + 1, 0);
     
-    // Scorri le settimane del mese (max 5)
+    // Trova il primo lunedì del mese
+    let firstMonday = new Date(firstDayOfMonth);
+    const dayOfWeek = firstMonday.getDay();
+    const daysToMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7;
+    firstMonday.setDate(firstMonday.getDate() + daysToMonday);
+    
+    // Se il primo lunedì è dopo il primo del mese, potrebbe essere nella settimana precedente
+    // Iniziamo dalla prima settimana che include giorni del mese
     let currentWeekStart = new Date(firstDayOfMonth);
-    for (let week = 0; week < 5; week++) {
-      // Calcola lunedì e domenica della settimana
-      const dayOfWeek = currentWeekStart.getDay();
-      const mondayOffset = dayOfWeek === 0 ? 0 : 1 - dayOfWeek;
+    // Sposta all'inizio della settimana (lunedì)
+    const currentDayOfWeek = currentWeekStart.getDay();
+    const offset = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1;
+    currentWeekStart.setDate(currentWeekStart.getDate() - offset);
+    
+    let weekFound = false;
+    let weekNumber = 0;
+    const maxWeeks = 6; // Max settimane in un mese
+    
+    while (weekNumber < maxWeeks && !weekFound) {
+      // Calcola lunedì e domenica della settimana corrente
       const monday = new Date(currentWeekStart);
-      monday.setDate(currentWeekStart.getDate() + mondayOffset);
       const sunday = new Date(monday);
       sunday.setDate(monday.getDate() + 6);
       
       // Se il lunedì è oltre il mese, fermati
       if (monday > lastDayOfMonth) break;
       
+      // Se la domenica è prima del primo del mese, salta questa settimana
+      if (sunday < firstDayOfMonth) {
+        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+        weekNumber++;
+        continue;
+      }
+      
       const startStr = monday.toISOString().split('T')[0];
       const endStr = sunday.toISOString().split('T')[0];
       
-      // Recupera ALLENAMENTI
+      // Recupera ALLENAMENTI della settimana
       const { data: trainings, error: trErr } = await db
         .from('trainings')
         .select('*')
         .gte('date', startStr)
         .lte('date', endStr);
       
-      // Recupera PARTITE
+      // Recupera PARTITE della settimana
       const { data: matches, error: mErr } = await db
         .from('matches')
         .select(`*, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`)
@@ -89,7 +112,12 @@ const CalendarPage = {
         .lte('match_date', endStr)
         .or(`home_team_id.eq.${sanCarloId},away_team_id.eq.${sanCarloId}`);
       
-      if (trErr || mErr) continue;
+      if (trErr || mErr) {
+        console.error('Errore nel caricamento eventi:', trErr || mErr);
+        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+        weekNumber++;
+        continue;
+      }
       
       // Unisci eventi
       const events = [];
@@ -97,17 +125,19 @@ const CalendarPage = {
       if (matches) matches.forEach(m => events.push({ type: 'match', data: m, date: m.match_date }));
       events.sort((a, b) => new Date(a.date) - new Date(b.date));
       
-      // Se trovi eventi, mostrali
+      // ✅ Se trovi eventi, mostrali e ESCI
       if (events.length > 0) {
         this.renderWeekEvents(events);
+        weekFound = true;
         return;
       }
       
       // Altrimenti vai alla settimana successiva
       currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+      weekNumber++;
     }
     
-    // Nessun evento
+    // Nessun evento in tutto il mese
     container.innerHTML = '<p style="color: var(--gray-500); text-align: center; padding: 12px;">Nessun evento programmato questo mese</p>';
   },
   
@@ -177,14 +207,12 @@ const CalendarPage = {
     
     const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
     
-    // Recupera ALLENAMENTI del mese
     const { data: trainings, error: trErr } = await db
       .from('trainings')
       .select('*')
       .gte('date', `${this.currentYear}-${String(this.currentMonth + 1).padStart(2, '0')}-01`)
       .lte('date', `${this.currentYear}-${String(this.currentMonth + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`);
     
-    // Recupera PARTITE del mese
     const { data: matches, error: mErr } = await db
       .from('matches')
       .select(`*, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`)
@@ -197,7 +225,6 @@ const CalendarPage = {
       return;
     }
     
-    // Costruisci mappa eventi
     const eventsMap = {};
     if (trainings) {
       trainings.forEach(t => {
@@ -214,7 +241,6 @@ const CalendarPage = {
       });
     }
     
-    // Genera griglia
     const firstDayOfWeek = new Date(this.currentYear, this.currentMonth, 1).getDay();
     const daysInMonth = lastDay;
     const today = new Date();
