@@ -6,20 +6,27 @@ const CalendarPage = {
     const view = document.getElementById('view');
     view.innerHTML = `
       <h2 style="color: var(--granata); margin-bottom: 16px;">📅 Calendario</h2>
-      <!-- Navigazione Mese -->
-      <div class="flex-between mb-4" style="display: flex; justify-content: space-between; align-items: center;">
-        <button class="icon-btn" id="prev-month" style="background: var(--gray-200); cursor: pointer;">◀</button>
-        <h3 id="current-month-label" style="color: var(--granata); margin: 0;"></h3>
-        <button class="icon-btn" id="next-month" style="background: var(--gray-200); cursor: pointer;">▶</button>
-      </div>
-      <!-- Griglia Calendario -->
-      <div class="calendar-grid" id="calendar-grid"></div>
-      <!-- Sezione "Questa Settimana" (SOTTO il calendario) -->
-      <div class="card" id="this-week-section" style="margin-top: 16px;">
-        <div class="card-title">📋 Questa Settimana</div>
-        <div id="week-events" style="min-height: 60px;"></div>
-      </div>
-    `;
+      <!-- Sezione "Questa Settimana" -->
+       <div class="card" id="this-week-section" style="margin-bottom: 16px;">
+         <div class="card-title">📋 Questa Settimana</div>
+         <div id="week-events" style="min-height: 60px;"></div>
+       </div>
+       <!-- Navigazione Mese -->
+       <div class="flex-between mb-4">
+         <button class="icon-btn" id="prev-month" style="background: var(--gray-200);">◀</button>
+         <h3 id="current-month-label" style="color: var(--granata);"></h3>
+         <button class="icon-btn" id="next-month" style="background: var(--gray-200);">▶</button>
+       </div>
+       <!-- Griglia Calendario -->
+       <div class="calendar-grid" id="calendar-grid"></div>
+       <!-- Lista Eventi del Giorno Selezionato -->
+       <div id="day-events-container" class="mt-4" style="display: none;">
+         <div class="card">
+           <div class="card-title" id="day-events-title">📋 Eventi del giorno</div>
+           <div id="day-events-list"></div>
+         </div>
+       </div>
+     `;
     
     // Event listeners
     document.getElementById('prev-month').addEventListener('click', () => this.changeMonth(-1));
@@ -46,6 +53,8 @@ const CalendarPage = {
   
   // ✅ FIX: Trova la PRIMA settimana del mese visualizzato che ha eventi
   async loadWeekForMonth() {
+    const container = document.getElementById('week-events');
+    
     // Recupera ID squadra S. Carlo
     const { data: teamData, error: tErr } = await db
       .from('teams')
@@ -55,10 +64,8 @@ const CalendarPage = {
     if (tErr || !teamData) return;
     const sanCarloId = teamData.id;
     
-    // Calcola primo giorno del mese visualizzato
+    // Calcola primo e ultimo giorno del mese visualizzato
     const firstDayOfMonth = new Date(this.currentYear, this.currentMonth, 1);
-    
-    // Calcola l'ultima settimana del mese (per non scorrere all'infinito)
     const lastDayOfMonth = new Date(this.currentYear, this.currentMonth + 1, 0);
     
     // ✅ Scorri le settimane del mese fino a trovare eventi (max 5 settimane)
@@ -116,7 +123,6 @@ const CalendarPage = {
     }
     
     // Se non trovi eventi in tutto il mese
-    const container = document.getElementById('week-events');
     container.innerHTML = '<p style="color: var(--gray-500); text-align: center; padding: 12px;">Nessun evento programmato questo mese</p>';
   },
   
@@ -261,6 +267,68 @@ const CalendarPage = {
     }
     
     container.innerHTML = html;
+  },
+  
+  async showDayEvents(day) {
+    const container = document.getElementById('day-events-container');
+    const title = document.getElementById('day-events-title');
+    const list = document.getElementById('day-events-list');
+    
+    if (!this.eventsMap || !this.eventsMap[day]) {
+      container.style.display = 'none';
+      return;
+    }
+    
+    const events = this.eventsMap[day];
+    const monthNames = [
+      'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+      'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+    ];
+    title.textContent = `📋 ${day} ${monthNames[this.currentMonth]} ${this.currentYear}`;
+    
+    let html = '';
+    events.forEach(ev => {
+      if (ev.type === 'training') {
+        const t = ev.data;
+        const dateObj = new Date(t.date);
+        const dayName = dateObj.toLocaleDateString('it-IT', { weekday: 'long' });
+        html += `
+          <div class="card" style="background: rgba(122,31,46,0.08); border-left: 4px solid var(--granata); margin-bottom: 8px;">
+            <div style="font-weight: 700; color: var(--granata);">🏃 Allenamento</div>
+            <div style="margin-top: 6px; font-size: 14px;">
+              📅 ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
+              ⏰ ${formatTime(t.time)}<br>
+              ${t.location ? '📍 ' + t.location + '<br>' : ''}
+              ${t.notes ? '📝 ' + t.notes : ''}
+            </div>
+          </div>
+        `;
+      } else if (ev.type === 'match') {
+        const m = ev.data;
+        const homeName = m.home_team?.name || 'Casa';
+        const awayName = m.away_team?.name || 'Ospite';
+        const score = (m.home_won_periods !== null && m.away_won_periods !== null)
+          ? `${m.home_won_periods} - ${m.away_won_periods}`
+          : 'vs';
+        const dateObj = new Date(m.match_date);
+        const dayName = dateObj.toLocaleDateString('it-IT', { weekday: 'long' });
+        html += `
+          <div class="card" style="background: rgba(245,158,11,0.08); border-left: 4px solid var(--warning); margin-bottom: 8px;">
+            <div style="font-weight: 700; color: var(--warning);">⚽ Partita · ${m.match_type === 'andata' ? 'Andata' : 'Ritorno'} G${m.matchday || '?'}</div>
+            <div style="margin-top: 6px; font-size: 14px;">
+              📅 ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
+              ⏰ ${m.match_time ? formatTime(m.match_time) : 'n.d.'}<br>
+              🏠 ${homeName} ${score} ${awayName}<br>
+              ${m.location ? '📍 ' + m.location : ''}
+            </div>
+          </div>
+        `;
+      }
+    });
+    
+    list.innerHTML = html;
+    container.style.display = 'block';
+    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 };
 
