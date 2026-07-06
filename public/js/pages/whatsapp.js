@@ -558,15 +558,19 @@ const WhatsAppPage = {
       : '';
 
     const msg = `🏟️ CONVOCAZIONE - ASD San Carlo Milano U9
- Partita: ${matchText}
+	
+⚽ Partita: ${matchText}
 📅 Data: ${dateStr}  Inizio: ${cleanTime(kickoff)}
 ⏰ Ritrovo PUNTUALI: ${cleanTime(meeting)}
 📍 Luogo: ${location || '[Da definire]'}${mapsLink}
 🧦 Divisa: ${kit}
+
 👇 CONVOCATI:
 ${selectedNames || '[Nessun giocatore selezionato]'}
+
 🎒 Da portare:
 ${selectedEquip || '[Nessun articolo selezionato]'}
+
 ${notes ? `\n📝 *Note:* ${notes}\n` : ''}💚 In caso di assenza, contattare il mister con anticipo!
 ForzaRagazzi 💪⚽`;
 
