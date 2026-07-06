@@ -8,8 +8,7 @@ const PushManager = {
   async init() {
     console.log('🔔 PushManager: init()');
 
-    // ✅ CRITICO PER iOS: Registra il Service Worker SUBITO all'avvio
-    // Deve essere fatto PRIMA del login, altrimenti le notifiche in background non funzionano
+    // ✅ CRITICO: Registra il Service Worker SUBITO all'avvio (PRIMA del login)
     if ('serviceWorker' in navigator && !this.serviceWorkerRegistered) {
       try {
         const registration = await navigator.serviceWorker.register('/OneSignalSDKWorker.js', {
@@ -103,7 +102,7 @@ const PushManager = {
       console.log('✅ Permesso già concesso, salvo subscription');
       setTimeout(() => this.saveSubscription(), 2000);
     } else if (perm === 'default') {
-      // ✅ SU iOS PWA: Chiedi esplicitamente il permesso (non parte automaticamente)
+      // ✅ SU iOS PWA: Chiedi esplicitamente il permesso
       if (isIOSPWA) {
         console.log('⏳ iOS PWA: Chiedo esplicitamente il permesso...');
         try {
@@ -116,7 +115,6 @@ const PushManager = {
           console.error('❌ Errore richiesta permesso:', err);
         }
       }
-      // Su Android/Web: OneSignal mostra il popup automaticamente
     } else if (perm === 'denied') {
       console.warn('⚠️ Permesso notifiche RIFIUTATO');
     }
@@ -137,7 +135,7 @@ const PushManager = {
         return;
       }
 
-      // ✅ RETRY LOOP: Su iOS il subscription ID può arrivare con ritardo (fino a 15s)
+      // ✅ RETRY LOOP: Su iOS il subscription ID può arrivare con ritardo
       const maxRetries = 10;
       let userId = null;
       let optIn = false;
