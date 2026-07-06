@@ -182,37 +182,48 @@ getCurrentWeekBounds() {
   return { start: monday, end: sunday };
 },
 
- // ===== CARICA SOLO PARTITE S. CARLO DELLA SETTIMANA =====
+ // ===== CARICA TUTTE LE PARTITE FUTURE SENZA CONVOCAZIONE =====
 async loadMatches() {
   const select = document.getElementById('conv-match');
   try {
-    const { start, end } = this.getCurrentWeekBounds();
-    const startStr = start.toISOString().split('T')[0];
-    const endStr = end.toISOString().split('T')[0];
-    
-    console.log('🔍 Cercando partite dal', startStr, 'al', endStr);
+    const today = new Date().toISOString().split('T')[0];
+    console.log('🔍 Cercando tutte le partite future dal', today);
 
+    // 1. Carica tutte le partite future di S. Carlo
     let query = db
       .from('matches')
       .select(`id, matchday, match_type, match_date, match_time, location, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`)
-      .gte('match_date', startStr)
-      .lte('match_date', endStr)
+      .gte('match_date', today)
       .order('match_date', { ascending: true })
       .order('match_time', { ascending: true });
 
-    // Filtra solo partite di S. Carlo Milano
     if (this.sanCarloId) {
       query = query.or(`home_team_id.eq.${this.sanCarloId},away_team_id.eq.${this.sanCarloId}`);
     }
 
-    const { data, error } = await query;
+    const { data: allMatches, error } = await query;
     if (error) throw error;
     
-    console.log('✅ Partite trovate:', data?.length || 0);
+    console.log('✅ Partite future trovate:', allMatches?.length || 0);
 
+    // 2. Carica tutte le convocazioni già salvate
+    const { data: existingConvocations, error: convErr } = await db
+      .from('convocations')
+      .select('match_id');
+    
+    if (convErr) console.error('Errore caricamento convocazioni:', convErr);
+    
+    const matchesWithConvocation = new Set(existingConvocations?.map(c => c.match_id) || []);
+    console.log('🚫 Partite già convocate:', matchesWithConvocation.size);
+
+    // 3. Filtra solo le partite SENZA convocazione
+    const availableMatches = allMatches.filter(m => !matchesWithConvocation.has(m.id));
+    console.log('✅ Partite disponibili per convocazione:', availableMatches.length);
+
+    // 4. Popola il dropdown
     let html = '<option value="">-- Seleziona partita --</option>';
-    if (data && data.length > 0) {
-      data.forEach(m => {
+    if (availableMatches && availableMatches.length > 0) {
+      availableMatches.forEach(m => {
         const date = new Date(m.match_date).toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' });
         const typeLabel = m.match_type === 'andata' ? '🏁' : '';
         const homeName = m.home_team?.name || '?';
@@ -221,7 +232,7 @@ async loadMatches() {
         html += `<option value="${m.id}" data-date="${m.match_date}" data-time="${m.match_time || ''}" data-location="${m.location || ''}" data-home="${homeName}" data-away="${awayName}">${typeLabel} G${m.matchday} · ${homeName} vs ${awayName} (${date}${timeStr})</option>`;
       });
     } else {
-      html = '<option value="">-- Nessuna partita questa settimana --</option>';
+      html = '<option value="">-- Nessuna partita disponibile --</option>';
     }
     select.innerHTML = html;
   } catch (err) {
