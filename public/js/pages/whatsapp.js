@@ -4,6 +4,8 @@ const WhatsAppPage = {
   currentConvocationId: null,
   sanCarloId: null,
   SANCARLO_TEAM_NAME: 'S. Carlo Milano',
+  locationMap: null,
+  locationMarker: null,
   EQUIPMENT_LIST: [
     { id: 'borraccia', label: 'Borraccia', emoji: '💧' },
     { id: 'pantaloncini', label: 'Pantaloncini ERREA', emoji: '🩳' },
@@ -39,9 +41,16 @@ const WhatsAppPage = {
               <input type="text" id="conv-location" class="form-control" placeholder="Es: Campo San Carlo" />
             </div>
           </div>
+          <!-- ✅ MAPPA ANTEPRIMA LUOGO -->
+          <div id="location-map-container" style="display: none; margin-top: 8px;">
+            <div id="location-map" style="height: 180px; border-radius: 8px; overflow: hidden; border: 1px solid var(--gray-200);"></div>
+            <button type="button" id="btn-open-maps" style="margin-top: 8px; width: 100%; padding: 8px; background: var(--granata); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+              📍 Apri nel navigatore
+            </button>
+          </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="margin-bottom: 0;">
-              <label> Orario Ritrovo</label>
+              <label>⏰ Orario Ritrovo</label>
               <input type="time" id="conv-meeting" class="form-control" required />
             </div>
             <div class="form-group" style="margin-bottom: 0;">
@@ -50,7 +59,7 @@ const WhatsAppPage = {
             </div>
           </div>
           <div class="form-group">
-            <label>🧦 Divisa / Kit</label>
+            <label> Divisa / Kit</label>
             <input type="text" id="conv-kit" class="form-control" value="Maglia granata, pantaloncini neri, calzettoni granata" />
           </div>
           <div class="form-group">
@@ -89,7 +98,7 @@ const WhatsAppPage = {
         </div>
         <button id="btn-open-wa" class="btn btn-primary btn-block" style="margin-top: 8px;">📲 Apri WhatsApp</button>
         <small style="display: block; text-align: center; margin-top: 6px; color: var(--gray-500); font-size: 11px;">
-          ️ Apre sempre WhatsApp normale (non Business)
+          ℹ️ Apre sempre WhatsApp normale (non Business)
         </small>
       </div>
       <div class="card">
@@ -98,9 +107,29 @@ const WhatsAppPage = {
       </div>
     `;
 
+    // Event Listeners
     document.getElementById('conv-match').addEventListener('change', (e) => this.onMatchSelected(e.target.value));
     document.getElementById('conv-date').addEventListener('input', () => this.updatePreview());
-    document.getElementById('conv-location').addEventListener('input', () => this.updatePreview());
+
+    // ✅ Event Listener Luogo con geocodifica live (debounce 800ms)
+    let locationTimeout;
+    document.getElementById('conv-location').addEventListener('input', (e) => {
+      clearTimeout(locationTimeout);
+      const location = e.target.value.trim();
+      if (location.length < 3) {
+        document.getElementById('location-map-container').style.display = 'none';
+        return;
+      }
+      locationTimeout = setTimeout(() => this.initLocationMap(location), 800);
+      this.updatePreview();
+    });
+
+    // ✅ Pulsante Apri Mappe
+    document.getElementById('btn-open-maps').addEventListener('click', () => {
+      const location = document.getElementById('conv-location').value;
+      if (location) this.openInMaps(location);
+    });
+
     document.getElementById('conv-meeting').addEventListener('input', () => this.updatePreview());
     document.getElementById('conv-kickoff').addEventListener('input', () => this.updatePreview());
     document.getElementById('conv-kit').addEventListener('input', () => this.updatePreview());
@@ -122,7 +151,7 @@ const WhatsAppPage = {
     this.updatePreview();
   },
 
-  // ===== GEOCODIFICA CON NOMINATIM (OpenStreetMap - GRATIS) =====
+  // ===== GEOCODIFICA CON NOMINATIM =====
   async geocodeLocation(address) {
     try {
       const response = await fetch(
@@ -135,6 +164,44 @@ const WhatsAppPage = {
       console.error('❌ Errore geocodifica:', err);
       return null;
     }
+  },
+
+  // ===== INIZIALIZZA MAPPA ANTEPRIMA =====
+  async initLocationMap(location) {
+    const container = document.getElementById('location-map-container');
+    const mapDiv = document.getElementById('location-map');
+
+    const coords = await this.geocodeLocation(location);
+    if (!coords) {
+      container.style.display = 'none';
+      return;
+    }
+
+    container.style.display = 'block';
+
+    if (this.locationMap) {
+      this.locationMap.remove();
+    }
+
+    const lat = parseFloat(coords.lat);
+    const lon = parseFloat(coords.lon);
+
+    this.locationMap = L.map('location-map', {
+      attributionControl: false,
+      zoomControl: false
+    }).setView([lat, lon], 16);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19
+    }).addTo(this.locationMap);
+
+    L.control.zoom({ position: 'topright' }).addTo(this.locationMap);
+
+    this.locationMarker = L.marker([lat, lon]).addTo(this.locationMap)
+      .bindPopup(location)
+      .openPopup();
+
+    setTimeout(() => this.locationMap.invalidateSize(), 100);
   },
 
   // ===== APRI MAPPE CON SCELTA SU iOS =====
@@ -267,19 +334,7 @@ const WhatsAppPage = {
     }
   },
 
-  getCurrentWeekBounds() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dayOfWeek = today.getDay();
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const monday = new Date(today);
-    monday.setDate(today.getDate() + mondayOffset);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-    return { start: monday, end: sunday };
-  },
-
+  // ===== CARICA PARTITE DELLA SETTIMANA CORRENTE =====
   async loadMatches() {
     const select = document.getElementById('conv-match');
     try {
@@ -321,11 +376,25 @@ const WhatsAppPage = {
     }
   },
 
+  getCurrentWeekBounds() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayOfWeek = today.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + mondayOffset);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+    return { start: monday, end: sunday };
+  },
+
   async onMatchSelected(matchId) {
     document.getElementById('conv-date').value = '';
     document.getElementById('conv-location').value = '';
     document.getElementById('conv-meeting').value = '';
     document.getElementById('conv-kickoff').value = '';
+    document.getElementById('location-map-container').style.display = 'none';
     this.currentConvocationId = null;
 
     if (!matchId) {
@@ -342,7 +411,10 @@ const WhatsAppPage = {
     const matchLocation = option.dataset.location;
 
     if (matchDate) document.getElementById('conv-date').value = matchDate;
-    if (matchLocation) document.getElementById('conv-location').value = matchLocation;
+    if (matchLocation) {
+      document.getElementById('conv-location').value = matchLocation;
+      this.initLocationMap(matchLocation);
+    }
     if (matchTime) {
       document.getElementById('conv-kickoff').value = matchTime;
       const meetingTime = this.subtractMinutes(matchTime, 30);
@@ -497,7 +569,7 @@ const WhatsAppPage = {
       .join('\n');
 
     // ✅ Link Google Maps universale
-    const mapsLink = location 
+    const mapsLink = location
       ? `\n🗺️ Mappa: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`
       : '';
 
@@ -511,7 +583,7 @@ const WhatsAppPage = {
 ${selectedNames || '[Nessun giocatore selezionato]'}
 🎒 Da portare:
 ${selectedEquip || '[Nessun articolo selezionato]'}
-${notes ? `\n📝 *Note:* ${notes}\n` : ''} In caso di assenza, contattare il mister con anticipo!
+${notes ? `\n📝 *Note:* ${notes}\n` : ''}💚 In caso di assenza, contattare il mister con anticipo!
 ForzaRagazzi 💪⚽`;
 
     document.getElementById('msg-preview').value = msg;
@@ -666,7 +738,7 @@ ForzaRagazzi 💪⚽`;
       generator: () => {
         const match = document.getElementById('conv-match').selectedOptions[0]?.textContent || '[partita]';
         const time = document.getElementById('conv-meeting').value || '[ora]';
-        return ` *RICORDO PARTITA*\n\nVi aspetto per ${match}!\n⏰ Ritrovo: ${time}\n\nPortate tutto il materiale e tanta grinta! 💪`;
+        return `⚽ *RICORDO PARTITA*\n\nVi aspetto per ${match}!\n⏰ Ritrovo: ${time}\n\nPortate tutto il materiale e tanta grinta! 💪`;
       }
     },
     {
@@ -678,7 +750,7 @@ ForzaRagazzi 💪⚽`;
     {
       label: '🩺 Scadenza Certificati',
       generator: () => {
-        return ` *SCADENZA CERTIFICATI MEDICI*\n\nAi genitori ricordiamo di controllare la scadenza del certificato medico e di consegnare il rinnovo prima della data indicata. È obbligatorio per partecipare agli allenamenti e alle partite.\n\nGrazie per la collaborazione! ✅`;
+        return `🩺 *SCADENZA CERTIFICATI MEDICI*\n\nAi genitori ricordiamo di controllare la scadenza del certificato medico e di consegnare il rinnovo prima della data indicata. È obbligatorio per partecipare agli allenamenti e alle partite.\n\nGrazie per la collaborazione! ✅`;
       }
     }
   ],
@@ -689,7 +761,7 @@ ForzaRagazzi 💪⚽`;
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--gray-200); gap: 8px;">
         <span style="font-size: 14px; font-weight: 500; flex: 1; min-width: 0;">${qm.label}</span>
         <div style="display: flex; gap: 6px; flex-shrink: 0;">
-          <button class="btn btn-secondary" data-copy-idx="${i}" style="font-size: 12px; padding: 6px 12px; min-height: 32px;">📋 Copia</button>
+          <button class="btn btn-secondary" data-copy-idx="${i}" style="font-size: 12px; padding: 6px 12px; min-height: 32px;"> Copia</button>
           <button class="btn btn-primary" data-wa-idx="${i}" style="font-size: 12px; padding: 6px 12px; min-height: 32px;">📲 WhatsApp</button>
         </div>
       </div>

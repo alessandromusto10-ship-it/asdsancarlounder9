@@ -1,5 +1,6 @@
 const HomePage = {
   SANCARLO_TEAM_NAME: 'S. Carlo Milano',
+  matchMap: null,
 
   async render() {
     const view = document.getElementById('view');
@@ -44,6 +45,43 @@ const HomePage = {
     }
   },
 
+  // ===== INIZIALIZZA MAPPA PROSSIMA PARTITA =====
+  async initMatchMap(location) {
+    const mapDiv = document.getElementById('match-map');
+    if (!mapDiv) return;
+
+    const coords = await this.geocodeLocation(location);
+    if (!coords) {
+      mapDiv.style.display = 'none';
+      return;
+    }
+
+    mapDiv.style.display = 'block';
+    const lat = parseFloat(coords.lat);
+    const lon = parseFloat(coords.lon);
+
+    if (this.matchMap) {
+      this.matchMap.remove();
+    }
+
+    this.matchMap = L.map('match-map', {
+      attributionControl: false,
+      zoomControl: false
+    }).setView([lat, lon], 16);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19
+    }).addTo(this.matchMap);
+
+    L.control.zoom({ position: 'topright' }).addTo(this.matchMap);
+
+    L.marker([lat, lon]).addTo(this.matchMap)
+      .bindPopup(location)
+      .openPopup();
+
+    setTimeout(() => this.matchMap.invalidateSize(), 100);
+  },
+
   // ===== APRI MAPPE CON SCELTA SU iOS =====
   async openInMaps(location) {
     const coords = await this.geocodeLocation(location);
@@ -58,13 +96,10 @@ const HomePage = {
     const isAndroid = /android/i.test(navigator.userAgent);
 
     if (isIOS) {
-      // ✅ iOS: mostra dialog con scelta tra Apple Maps e Google Maps
       this.showMapsChoiceDialog(location, lat, lon);
     } else if (isAndroid) {
-      // Android: Google Maps diretto
       window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`, '_blank');
     } else {
-      // Desktop: Google Maps web
       window.open(`https://www.google.com/maps/place/?q=${lat},${lon}`, '_blank');
     }
   },
@@ -98,7 +133,7 @@ const HomePage = {
 
     dialog.innerHTML = `
       <div style="text-align: center; margin-bottom: 16px;">
-        <div style="font-size: 16px; font-weight: 700; color: var(--granata); margin-bottom: 4px;"> Apri con</div>
+        <div style="font-size: 16px; font-weight: 700; color: var(--granata); margin-bottom: 4px;">📍 Apri con</div>
         <div style="font-size: 13px; color: var(--gray-700);">${location}</div>
       </div>
       <button id="btn-apple-maps" style="
@@ -112,7 +147,7 @@ const HomePage = {
         font-size: 15px;
         font-weight: 600;
         cursor: pointer;
-      "> Apple Maps</button>
+      ">🍎 Apple Maps</button>
       <button id="btn-google-maps" style="
         width: 100%;
         padding: 12px;
@@ -124,7 +159,7 @@ const HomePage = {
         font-size: 15px;
         font-weight: 600;
         cursor: pointer;
-      ">🗺️ Google Maps</button>
+      ">️ Google Maps</button>
       <button id="btn-cancel-maps" style="
         width: 100%;
         padding: 12px;
@@ -261,7 +296,7 @@ const HomePage = {
       if (profile?.role === 'mister') {
         convocationBanner = `
           <div style="margin-top: 12px; padding: 10px 12px; background: rgba(122,31,46,0.08); border-left: 3px solid var(--granata); border-radius: 8px; font-size: 13px;">
-            <div style="font-weight: 600; color: var(--granata); margin-bottom: 2px;">👨‍ Sei il Mister</div>
+            <div style="font-weight: 600; color: var(--granata); margin-bottom: 2px;">👨‍🏫 Sei il Mister</div>
             <div style="color: var(--gray-700); font-size: 12px;">Gestisci la convocazione dalla sezione WhatsApp 📱</div>
           </div>
         `;
@@ -269,18 +304,19 @@ const HomePage = {
         convocationBanner = await this.buildConvocationBanner(m.id, profile);
       }
 
-      // ✅ Pulsante mappa solo se c'è un luogo
-      const mapButton = m.location ? `
-        <button id="btn-open-maps" type="button" style="margin-top: 12px; width: 100%; padding: 8px; background: var(--granata); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+      // ✅ Mappa e pulsante solo se c'è un luogo
+      const mapSection = m.location ? `
+        <div id="match-map" style="height: 180px; margin-top: 12px; border-radius: 8px; overflow: hidden; border: 1px solid var(--gray-200); display: none;"></div>
+        <button id="btn-open-maps" type="button" style="margin-top: 8px; width: 100%; padding: 8px; background: var(--granata); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
           📍 Apri nel navigatore
         </button>
       ` : '';
 
       container.innerHTML = `
-        <div class="card-title"> Prossima Partita</div>
+        <div class="card-title">⚽ Prossima Partita</div>
         <div style="text-align: center;">
           <div style="font-size: 13px; color: var(--gray-500); margin-bottom: 8px;">
-            ${m.match_type === 'andata' ? '🏁 Andata' : '🔄 Ritorno'} · Giornata ${m.matchday || '?'}
+            ${m.match_type === 'andata' ? ' Andata' : '🔄 Ritorno'} · Giornata ${m.matchday || '?'}
           </div>
           <div style="display: flex; justify-content: center; align-items: center; gap: 16px; margin: 12px 0;">
             <div style="flex: 1; text-align: right; font-weight: 600;">${homeName}</div>
@@ -289,17 +325,18 @@ const HomePage = {
           </div>
           <div style="color: var(--gray-700); font-size: 14px;">
             📅 ${dateObj.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long' })}
-            ${m.match_time ? ' · ⏰ ' + formatTime(m.match_time) : ''}
+            ${m.match_time ? ' ·  ' + formatTime(m.match_time) : ''}
           </div>
           ${m.location ? `<div style="color: var(--gray-500); font-size: 13px; margin-top: 4px;">📍 ${m.location}</div>` : ''}
           <div style="margin-top: 8px;">${countdown}</div>
         </div>
-        ${mapButton}
+        ${mapSection}
         ${convocationBanner}
       `;
 
-      // ✅ Event listener per il pulsante mappa
+      // ✅ Inizializza mappa e pulsante dopo il render
       if (m.location) {
+        await this.initMatchMap(m.location);
         document.getElementById('btn-open-maps')?.addEventListener('click', () => {
           this.openInMaps(m.location);
         });
@@ -321,7 +358,7 @@ const HomePage = {
       if (pErr || !player) {
         return `
           <div style="margin-top: 12px; padding: 10px 12px; background: rgba(107,114,128,0.08); border-left: 3px solid var(--gray-500); border-radius: 8px; font-size: 13px;">
-            <div style="color: var(--gray-700); font-size: 12px;">️ Nessun figlio associato al tuo account</div>
+            <div style="color: var(--gray-700); font-size: 12px;">⚠️ Nessun figlio associato al tuo account</div>
           </div>
         `;
       }
@@ -361,12 +398,12 @@ const HomePage = {
           'borraccia': '💧 Borraccia',
           'pantaloncini': '🩳 Pantaloncini',
           'parastinchi': '🛡️ Parastinchi',
-          'scarpe': ' Scarpe',
+          'scarpe': '👟 Scarpe',
           'maglia': '👕 Maglia',
           'calzettoni': '🧦 Calzettoni',
           'tuta': '🏃 Tuta',
-          'giaccone': '🧥 Giaccone',
-          'kway': '🌧️ Kway'
+          'giaccone': ' Giaccone',
+          'kway': '️ Kway'
         };
         const items = convocation.what_to_bring.split(',').map(id => equipMap[id.trim()] || id.trim());
         whatToBringText = items.join(' · ');
@@ -375,10 +412,10 @@ const HomePage = {
         <div style="margin-top: 12px; padding: 10px 12px; background: rgba(34,197,94,0.1); border-left: 3px solid #22c55e; border-radius: 8px; font-size: 13px;">
           <div style="font-weight: 700; color: #16a34a; margin-bottom: 6px; font-size: 14px;">✅ ${player.first_name} è CONVOCATO!</div>
           <div style="color: var(--gray-700); font-size: 12px; line-height: 1.6;">
-            <div> Ritrovo: <strong>${meeting}</strong></div>
+            <div>⏰ Ritrovo: <strong>${meeting}</strong></div>
             <div>🧦 Divisa: ${kit}</div>
-            ${whatToBringText ? `<div>🎒 Portare: ${whatToBringText}</div>` : ''}
-            ${convocation.notes ? `<div style="margin-top: 4px; font-style: italic;"> ${convocation.notes}</div>` : ''}
+            ${whatToBringText ? `<div> Portare: ${whatToBringText}</div>` : ''}
+            ${convocation.notes ? `<div style="margin-top: 4px; font-style: italic;">📝 ${convocation.notes}</div>` : ''}
           </div>
         </div>
       `;
@@ -447,7 +484,7 @@ const HomePage = {
         `;
       }).join('');
       container.innerHTML = `
-        <div class="card-title">🏆 Ultimi Risultati</div>
+        <div class="card-title"> Ultimi Risultati</div>
         ${resultsHtml}
       `;
     } catch (err) {
