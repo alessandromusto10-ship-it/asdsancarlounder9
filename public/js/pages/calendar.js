@@ -49,31 +49,10 @@ const CalendarPage = {
     this.loadWeekForMonth();
   },
 
-  // ✅ Mostra SEMPRE la settimana corrente reale (lunedì-domenica basata su oggi)
-  // Funziona per tutti i mesi dell'anno
+  // ✅ Mostra la settimana corretta in base al mese visualizzato
   async loadWeekForMonth() {
     const container = document.getElementById('week-events');
     
-    // 1. Calcola il lunedì e la domenica della settimana corrente (basata su OGGI)
-    const today = new Date();
-    const dayOfWeek = today.getDay(); // 0=Domenica, 1=Lunedì, ..., 6=Sabato
-    
-    // Vai al lunedì della settimana corrente
-    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - daysToMonday);
-    monday.setHours(0, 0, 0, 0);
-    
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-    
-    const startStr = this.formatDate(monday);
-    const endStr = this.formatDate(sunday);
-    
-    console.log(`📅 Settimana corrente: dal ${startStr} al ${endStr}`);
-    
-    // 2. Recupera la squadra S. Carlo
     const { data: teamData, error: tErr } = await db
       .from('teams')
       .select('id')
@@ -86,15 +65,46 @@ const CalendarPage = {
     }
     
     const sanCarloId = teamData.id;
+    const today = new Date();
+    const isCurrentMonth = today.getMonth() === this.currentMonth && today.getFullYear() === this.currentYear;
     
-    // 3. Recupera ALLENAMENTI di questa settimana (lunedì-domenica)
+    let monday, sunday;
+    
+    if (isCurrentMonth) {
+      // ✅ MESE CORRENTE: mostra la settimana corrente reale (lunedì-domenica basata su oggi)
+      const dayOfWeek = today.getDay();
+      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      monday = new Date(today);
+      monday.setDate(today.getDate() - daysToMonday);
+      monday.setHours(0, 0, 0, 0);
+      
+      sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+      
+      console.log(`📅 Mese corrente: mostra settimana ${monday.getDate()}-${sunday.getDate()} ${monday.toLocaleDateString('it-IT', { month: 'long' })}`);
+    } else {
+      // ✅ ALTRI MESI: mostra la prima settimana del mese (dal 1° al 7°)
+      monday = new Date(this.currentYear, this.currentMonth, 1);
+      monday.setHours(0, 0, 0, 0);
+      
+      sunday = new Date(this.currentYear, this.currentMonth, 7);
+      sunday.setHours(23, 59, 59, 999);
+      
+      console.log(`📅 Altro mese: mostra prima settimana ${monday.getDate()}-${sunday.getDate()} ${monday.toLocaleDateString('it-IT', { month: 'long' })}`);
+    }
+    
+    const startStr = this.formatDate(monday);
+    const endStr = this.formatDate(sunday);
+    
+    console.log(`📅 Cercando eventi dal ${startStr} al ${endStr}`);
+    
     const { data: trainings, error: trErr } = await db
       .from('trainings')
       .select('*')
       .gte('date', startStr)
       .lte('date', endStr);
     
-    // 4. Recupera PARTITE di questa settimana (lunedì-domenica)
     const { data: matches, error: mErr } = await db
       .from('matches')
       .select(`*, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`)
@@ -105,7 +115,6 @@ const CalendarPage = {
     if (trErr) console.error('Errore trainings:', trErr);
     if (mErr) console.error('Errore matches:', mErr);
     
-    // 5. Unisci eventi
     const events = [];
     
     if (trainings && trainings.length > 0) {
@@ -120,12 +129,10 @@ const CalendarPage = {
       });
     }
     
-    // 6. Ordina per data
     events.sort((a, b) => new Date(a.date) - new Date(b.date));
     
     console.log(`📊 Totale eventi questa settimana: ${events.length}`);
     
-    // 7. Mostra eventi o messaggio vuoto
     if (events.length > 0) {
       this.renderWeekEvents(events);
     } else {
@@ -161,7 +168,7 @@ const CalendarPage = {
             <div style="font-weight: 700; color: var(--granata);">🏃 Allenamento</div>
             <div style="margin-top: 6px; font-size: 14px;">
               📅 ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
-               ${formatTime(t.time)}<br>
+              ⏰ ${formatTime(t.time)}<br>
               ${t.location ? '📍 ' + t.location + '<br>' : ''}
               ${t.notes ? '📝 ' + t.notes : ''}
             </div>
@@ -180,7 +187,7 @@ const CalendarPage = {
         
         html += `
           <div class="card" style="background: rgba(245,158,11,0.08); border-left: 4px solid var(--warning); margin-bottom: 8px;">
-            <div style="font-weight: 700; color: var(--warning);"> Partita · ${m.match_type === 'andata' ? 'Andata' : 'Ritorno'} G${m.matchday || '?'}</div>
+            <div style="font-weight: 700; color: var(--warning);">⚽ Partita · ${m.match_type === 'andata' ? 'Andata' : 'Ritorno'} G${m.matchday || '?'}</div>
             <div style="margin-top: 6px; font-size: 14px;">
               📅 ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
               ⏰ ${m.match_time ? formatTime(m.match_time) : 'n.d.'}<br>
