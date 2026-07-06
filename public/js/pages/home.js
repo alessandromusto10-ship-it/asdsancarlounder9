@@ -1,7 +1,5 @@
 const HomePage = {
   SANCARLO_TEAM_NAME: 'S. Carlo Milano',
-  matchMap: null, // Riferimento mappa Leaflet
-  matchMarker: null, // Riferimento marker
 
   async render() {
     const view = document.getElementById('view');
@@ -46,46 +44,7 @@ const HomePage = {
     }
   },
 
-  // ===== INIZIALIZZA MAPPA PROSSIMA PARTITA =====
-  async initMatchMap(location) {
-    const mapDiv = document.getElementById('match-map');
-    if (!mapDiv) return;
-
-    const coords = await this.geocodeLocation(location);
-    if (!coords) {
-      mapDiv.style.display = 'none';
-      document.getElementById('btn-open-maps')?.remove();
-      return;
-    }
-
-    mapDiv.style.display = 'block';
-    const lat = parseFloat(coords.lat);
-    const lon = parseFloat(coords.lon);
-
-    // Se la mappa esiste già, la rimuovo
-    if (this.matchMap) {
-      this.matchMap.remove();
-    }
-
-    this.matchMap = L.map('match-map', {
-      attributionControl: false,
-      zoomControl: false
-    }).setView([lat, lon], 16);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19
-    }).addTo(this.matchMap);
-
-    L.control.zoom({ position: 'topright' }).addTo(this.matchMap);
-
-    this.matchMarker = L.marker([lat, lon]).addTo(this.matchMap)
-      .bindPopup(location)
-      .openPopup();
-
-    setTimeout(() => this.matchMap.invalidateSize(), 100);
-  },
-
-  // ===== APRI GOOGLE/APPLE MAPS =====
+  // ===== APRI MAPPE CON SCELTA SU iOS =====
   async openInMaps(location) {
     const coords = await this.geocodeLocation(location);
     if (!coords) {
@@ -95,16 +54,112 @@ const HomePage = {
 
     const lat = coords.lat;
     const lon = coords.lon;
-    const isAndroid = /android/i.test(navigator.userAgent);
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isAndroid = /android/i.test(navigator.userAgent);
 
     if (isIOS) {
-      window.open(`http://maps.apple.com/?ll=${lat},${lon}&q=${encodeURIComponent(location)}`, '_blank');
+      // ✅ iOS: mostra dialog con scelta tra Apple Maps e Google Maps
+      this.showMapsChoiceDialog(location, lat, lon);
     } else if (isAndroid) {
+      // Android: Google Maps diretto
       window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`, '_blank');
     } else {
+      // Desktop: Google Maps web
       window.open(`https://www.google.com/maps/place/?q=${lat},${lon}`, '_blank');
     }
+  },
+
+  // ===== DIALOG SCELTA MAPPE SU iOS =====
+  showMapsChoiceDialog(location, lat, lon) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    `;
+
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 320px;
+      width: 100%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    `;
+
+    dialog.innerHTML = `
+      <div style="text-align: center; margin-bottom: 16px;">
+        <div style="font-size: 16px; font-weight: 700; color: var(--granata); margin-bottom: 4px;"> Apri con</div>
+        <div style="font-size: 13px; color: var(--gray-700);">${location}</div>
+      </div>
+      <button id="btn-apple-maps" style="
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 8px;
+        background: #007AFF;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+      "> Apple Maps</button>
+      <button id="btn-google-maps" style="
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 8px;
+        background: #4285F4;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+      ">🗺️ Google Maps</button>
+      <button id="btn-cancel-maps" style="
+        width: 100%;
+        padding: 12px;
+        background: var(--gray-200);
+        color: var(--gray-700);
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+      ">Annulla</button>
+    `;
+
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+
+    document.getElementById('btn-apple-maps').addEventListener('click', () => {
+      window.open(`http://maps.apple.com/?ll=${lat},${lon}&q=${encodeURIComponent(location)}`, '_blank');
+      document.body.removeChild(overlay);
+    });
+
+    document.getElementById('btn-google-maps').addEventListener('click', () => {
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`, '_blank');
+      document.body.removeChild(overlay);
+    });
+
+    document.getElementById('btn-cancel-maps').addEventListener('click', () => {
+      document.body.removeChild(overlay);
+    });
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        document.body.removeChild(overlay);
+      }
+    });
   },
 
   async loadNextTraining() {
@@ -143,7 +198,7 @@ const HomePage = {
               ${dateObj.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long' })}
             </div>
             <div style="margin-top: 4px; color: var(--gray-700);">
-              ⏰ ${formatTime(t.time)} ${t.location ? '· 📍 ' + t.location : ''}
+               ${formatTime(t.time)} ${t.location ? '· 📍 ' + t.location : ''}
             </div>
           </div>
           ${countdown}
@@ -164,7 +219,7 @@ const HomePage = {
         .single();
       if (tErr || !teamData) {
         container.innerHTML = `
-          <div class="card-title">⚽ Prossima Partita</div>
+          <div class="card-title"> Prossima Partita</div>
           <p style="color: var(--gray-500); text-align: center; padding: 12px;">
             Squadra non trovata
           </p>
@@ -206,7 +261,7 @@ const HomePage = {
       if (profile?.role === 'mister') {
         convocationBanner = `
           <div style="margin-top: 12px; padding: 10px 12px; background: rgba(122,31,46,0.08); border-left: 3px solid var(--granata); border-radius: 8px; font-size: 13px;">
-            <div style="font-weight: 600; color: var(--granata); margin-bottom: 2px;">👨‍🏫 Sei il Mister</div>
+            <div style="font-weight: 600; color: var(--granata); margin-bottom: 2px;">👨‍ Sei il Mister</div>
             <div style="color: var(--gray-700); font-size: 12px;">Gestisci la convocazione dalla sezione WhatsApp 📱</div>
           </div>
         `;
@@ -214,16 +269,15 @@ const HomePage = {
         convocationBanner = await this.buildConvocationBanner(m.id, profile);
       }
 
-      // ✅ Aggiungo mappa e pulsante solo se c'è un luogo
-      const mapSection = m.location ? `
-        <div id="match-map" style="height: 180px; margin-top: 12px; border-radius: 8px; overflow: hidden; border: 1px solid var(--gray-200); display: none;"></div>
-        <button id="btn-open-maps" type="button" style="margin-top: 8px; width: 100%; padding: 8px; background: var(--granata); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
-           Apri nel navigatore
+      // ✅ Pulsante mappa solo se c'è un luogo
+      const mapButton = m.location ? `
+        <button id="btn-open-maps" type="button" style="margin-top: 12px; width: 100%; padding: 8px; background: var(--granata); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+          📍 Apri nel navigatore
         </button>
       ` : '';
 
       container.innerHTML = `
-        <div class="card-title">⚽ Prossima Partita</div>
+        <div class="card-title"> Prossima Partita</div>
         <div style="text-align: center;">
           <div style="font-size: 13px; color: var(--gray-500); margin-bottom: 8px;">
             ${m.match_type === 'andata' ? '🏁 Andata' : '🔄 Ritorno'} · Giornata ${m.matchday || '?'}
@@ -234,19 +288,18 @@ const HomePage = {
             <div style="flex: 1; text-align: left; font-weight: 600;">${awayName}</div>
           </div>
           <div style="color: var(--gray-700); font-size: 14px;">
-             ${dateObj.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long' })}
+            📅 ${dateObj.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long' })}
             ${m.match_time ? ' · ⏰ ' + formatTime(m.match_time) : ''}
           </div>
-          ${m.location ? `<div style="color: var(--gray-500); font-size: 13px; margin-top: 4px;"> ${m.location}</div>` : ''}
+          ${m.location ? `<div style="color: var(--gray-500); font-size: 13px; margin-top: 4px;">📍 ${m.location}</div>` : ''}
           <div style="margin-top: 8px;">${countdown}</div>
         </div>
-        ${mapSection}
+        ${mapButton}
         ${convocationBanner}
       `;
 
-      // ✅ Inizializza mappa e pulsante dopo il render
+      // ✅ Event listener per il pulsante mappa
       if (m.location) {
-        await this.initMatchMap(m.location);
         document.getElementById('btn-open-maps')?.addEventListener('click', () => {
           this.openInMaps(m.location);
         });
@@ -268,7 +321,7 @@ const HomePage = {
       if (pErr || !player) {
         return `
           <div style="margin-top: 12px; padding: 10px 12px; background: rgba(107,114,128,0.08); border-left: 3px solid var(--gray-500); border-radius: 8px; font-size: 13px;">
-            <div style="color: var(--gray-700); font-size: 12px;">⚠️ Nessun figlio associato al tuo account</div>
+            <div style="color: var(--gray-700); font-size: 12px;">️ Nessun figlio associato al tuo account</div>
           </div>
         `;
       }
@@ -307,12 +360,12 @@ const HomePage = {
         const equipMap = {
           'borraccia': '💧 Borraccia',
           'pantaloncini': '🩳 Pantaloncini',
-          'parastinchi': '️ Parastinchi',
-          'scarpe': '👟 Scarpe',
+          'parastinchi': '🛡️ Parastinchi',
+          'scarpe': ' Scarpe',
           'maglia': '👕 Maglia',
           'calzettoni': '🧦 Calzettoni',
           'tuta': '🏃 Tuta',
-          'giaccone': ' Giaccone',
+          'giaccone': '🧥 Giaccone',
           'kway': '🌧️ Kway'
         };
         const items = convocation.what_to_bring.split(',').map(id => equipMap[id.trim()] || id.trim());
@@ -322,10 +375,10 @@ const HomePage = {
         <div style="margin-top: 12px; padding: 10px 12px; background: rgba(34,197,94,0.1); border-left: 3px solid #22c55e; border-radius: 8px; font-size: 13px;">
           <div style="font-weight: 700; color: #16a34a; margin-bottom: 6px; font-size: 14px;">✅ ${player.first_name} è CONVOCATO!</div>
           <div style="color: var(--gray-700); font-size: 12px; line-height: 1.6;">
-            <div>⏰ Ritrovo: <strong>${meeting}</strong></div>
-            <div> Divisa: ${kit}</div>
+            <div> Ritrovo: <strong>${meeting}</strong></div>
+            <div>🧦 Divisa: ${kit}</div>
             ${whatToBringText ? `<div>🎒 Portare: ${whatToBringText}</div>` : ''}
-            ${convocation.notes ? `<div style="margin-top: 4px; font-style: italic;">📝 ${convocation.notes}</div>` : ''}
+            ${convocation.notes ? `<div style="margin-top: 4px; font-style: italic;"> ${convocation.notes}</div>` : ''}
           </div>
         </div>
       `;
@@ -345,7 +398,7 @@ const HomePage = {
         .single();
       if (tErr || !teamData) {
         container.innerHTML = `
-          <div class="card-title"> Ultimi Risultati</div>
+          <div class="card-title">🏆 Ultimi Risultati</div>
           <p style="color: var(--gray-500); text-align: center; padding: 12px;">
             Squadra non trovata
           </p>

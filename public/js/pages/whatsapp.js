@@ -4,16 +4,13 @@ const WhatsAppPage = {
   currentConvocationId: null,
   sanCarloId: null,
   SANCARLO_TEAM_NAME: 'S. Carlo Milano',
-  locationMap: null, // Riferimento alla mappa Leaflet
-  locationMarker: null, // Riferimento al marker
-
   EQUIPMENT_LIST: [
     { id: 'borraccia', label: 'Borraccia', emoji: '💧' },
     { id: 'pantaloncini', label: 'Pantaloncini ERREA', emoji: '🩳' },
-    { id: 'parastinchi', label: 'Parastinchi', emoji: '️🛡️' },
+    { id: 'parastinchi', label: 'Parastinchi', emoji: '🛡️' },
     { id: 'scarpe', label: 'Scarpe da calcio', emoji: '👟' },
     { id: 'maglia', label: 'Maglia con numero', emoji: '👕' },
-    { id: 'calzettoni', label: 'Calzettoni', emoji: '🧦' },
+    { id: 'calzettoni', label: 'Calzettoni', emoji: '' },
     { id: 'tuta', label: 'Tuta di rappresentanza', emoji: '🏃‍♂️' },
     { id: 'giaccone', label: 'Giaccone', emoji: '🧥' },
     { id: 'kway', label: 'Kway', emoji: '🌧️' }
@@ -22,9 +19,7 @@ const WhatsAppPage = {
   async render() {
     const view = document.getElementById('view');
     view.innerHTML = `
-      <h2 style="color: var(--granata); margin-bottom: 16px;">📱 WhatsApp Convocazioni</h2>
-      
-      <!-- Selezione Match & Dettagli -->
+      <h2 style="color: var(--granata); margin-bottom: 16px;"> WhatsApp Convocazioni</h2>
       <div class="card">
         <div class="card-title">🏟️ Dettagli Convocazione</div>
         <form id="convocation-form">
@@ -44,18 +39,9 @@ const WhatsAppPage = {
               <input type="text" id="conv-location" class="form-control" placeholder="Es: Campo San Carlo" />
             </div>
           </div>
-          
-          <!-- ✅ MAPPA ANTEPRIMA LUOGO -->
-          <div id="location-map-container" style="display: none; margin-top: 8px;">
-            <div id="location-map" style="height: 180px; border-radius: 8px; overflow: hidden; border: 1px solid var(--gray-200);"></div>
-            <button type="button" id="btn-open-maps" style="margin-top: 8px; width: 100%; padding: 8px; background: var(--granata); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
-              📍 Apri nel navigatore
-            </button>
-          </div>
-          
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="margin-bottom: 0;">
-              <label>⏰ Orario Ritrovo</label>
+              <label> Orario Ritrovo</label>
               <input type="time" id="conv-meeting" class="form-control" required />
             </div>
             <div class="form-group" style="margin-bottom: 0;">
@@ -67,7 +53,6 @@ const WhatsAppPage = {
             <label>🧦 Divisa / Kit</label>
             <input type="text" id="conv-kit" class="form-control" value="Maglia granata, pantaloncini neri, calzettoni granata" />
           </div>
-          <!-- Cosa Portare (Selezione Multipla) -->
           <div class="form-group">
             <label>🎒 Cosa Portare</label>
             <div class="role-tabs" style="margin-bottom: 8px;">
@@ -78,13 +63,11 @@ const WhatsAppPage = {
             </div>
           </div>
           <div class="form-group">
-            <label> Note (opzionale)</label>
+            <label>📝 Note (opzionale)</label>
             <textarea id="conv-notes" class="form-control" rows="2" placeholder="Es: Portare certificato medico"></textarea>
           </div>
         </form>
       </div>
-      
-      <!-- Selezione Convocati -->
       <div class="card">
         <div class="flex-between mb-4">
           <div class="card-title" style="margin-bottom: 0;">👇 Convocati</div>
@@ -97,8 +80,6 @@ const WhatsAppPage = {
           <div class="spinner"></div>
         </div>
       </div>
-      
-      <!-- Anteprima & Azioni -->
       <div class="card">
         <div class="card-title">📋 Anteprima Messaggio</div>
         <textarea id="msg-preview" class="form-control" rows="12" readonly style="font-family: monospace; font-size: 13px; background: var(--gray-50);"></textarea>
@@ -108,60 +89,31 @@ const WhatsAppPage = {
         </div>
         <button id="btn-open-wa" class="btn btn-primary btn-block" style="margin-top: 8px;">📲 Apri WhatsApp</button>
         <small style="display: block; text-align: center; margin-top: 6px; color: var(--gray-500); font-size: 11px;">
-          ℹ️ Apre sempre WhatsApp normale (non Business)
+          ️ Apre sempre WhatsApp normale (non Business)
         </small>
       </div>
-      
-      <!-- Messaggi Rapidi -->
       <div class="card">
         <div class="card-title">⚡ Messaggi Rapidi</div>
         <div id="quick-msgs-list"></div>
       </div>
     `;
 
-    // Event Listeners Dettagli
     document.getElementById('conv-match').addEventListener('change', (e) => this.onMatchSelected(e.target.value));
     document.getElementById('conv-date').addEventListener('input', () => this.updatePreview());
-    
-    // ✅ Event Listener Luogo con geocodifica live
-    let locationTimeout;
-    document.getElementById('conv-location').addEventListener('input', (e) => {
-      clearTimeout(locationTimeout);
-      const location = e.target.value.trim();
-      if (location.length < 3) {
-        document.getElementById('location-map-container').style.display = 'none';
-        return;
-      }
-      // Debounce 800ms per non sovraccaricare Nominatim
-      locationTimeout = setTimeout(() => this.initLocationMap(location), 800);
-      this.updatePreview();
-    });
-    
-    // ✅ Pulsante Apri Mappe
-    document.getElementById('btn-open-maps').addEventListener('click', () => {
-      const location = document.getElementById('conv-location').value;
-      if (location) this.openInMaps(location);
-    });
-    
+    document.getElementById('conv-location').addEventListener('input', () => this.updatePreview());
     document.getElementById('conv-meeting').addEventListener('input', () => this.updatePreview());
     document.getElementById('conv-kickoff').addEventListener('input', () => this.updatePreview());
     document.getElementById('conv-kit').addEventListener('input', () => this.updatePreview());
     document.getElementById('conv-notes').addEventListener('input', () => this.updatePreview());
 
-    // Event Listeners Equipaggiamento
     document.getElementById('btn-equip-all').addEventListener('click', () => this.toggleAllEquipment(true));
     document.getElementById('btn-equip-none').addEventListener('click', () => this.toggleAllEquipment(false));
-
-    // Event Listeners Convocati
     document.getElementById('btn-select-all').addEventListener('click', () => this.toggleAllPlayers(true));
     document.getElementById('btn-deselect-all').addEventListener('click', () => this.toggleAllPlayers(false));
-
-    // Azioni
     document.getElementById('btn-save-conv').addEventListener('click', () => this.saveConvocation());
     document.getElementById('btn-copy-msg').addEventListener('click', () => this.copyMessage());
     document.getElementById('btn-open-wa').addEventListener('click', () => this.openWhatsApp());
 
-    // Caricamento iniziale
     await this.loadSanCarloId();
     await this.loadMatches();
     await this.loadPlayers();
@@ -185,73 +137,121 @@ const WhatsAppPage = {
     }
   },
 
-  // ===== INIZIALIZZA MAPPA ANTEPRIMA =====
-  async initLocationMap(location) {
-    const container = document.getElementById('location-map-container');
-    const mapDiv = document.getElementById('location-map');
-    
-    const coords = await this.geocodeLocation(location);
-    if (!coords) {
-      container.style.display = 'none';
-      return;
-    }
-    
-    container.style.display = 'block';
-    
-    // Se la mappa esiste già, la aggiorno
-    if (this.locationMap) {
-      this.locationMap.remove();
-    }
-    
-    const lat = parseFloat(coords.lat);
-    const lon = parseFloat(coords.lon);
-    
-    // Crea la mappa Leaflet
-    this.locationMap = L.map('location-map', {
-      attributionControl: false,
-      zoomControl: false
-    }).setView([lat, lon], 16);
-    
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19
-    }).addTo(this.locationMap);
-    
-    L.control.zoom({ position: 'topright' }).addTo(this.locationMap);
-    
-    this.locationMarker = L.marker([lat, lon]).addTo(this.locationMap)
-      .bindPopup(location)
-      .openPopup();
-    
-    // Fix per rendering corretto
-    setTimeout(() => this.locationMap.invalidateSize(), 100);
-  },
-
-  // ===== APRI GOOGLE/APPLE MAPS =====
+  // ===== APRI MAPPE CON SCELTA SU iOS =====
   async openInMaps(location) {
     const coords = await this.geocodeLocation(location);
     if (!coords) {
       alert('Impossibile trovare la posizione: ' + location);
       return;
     }
-    
+
     const lat = coords.lat;
     const lon = coords.lon;
-    const isAndroid = /android/i.test(navigator.userAgent);
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    
+    const isAndroid = /android/i.test(navigator.userAgent);
+
     if (isIOS) {
-      // iOS: Apple Maps
-      window.open(`http://maps.apple.com/?ll=${lat},${lon}&q=${encodeURIComponent(location)}`, '_blank');
+      this.showMapsChoiceDialog(location, lat, lon);
     } else if (isAndroid) {
-      // Android: Google Maps
       window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`, '_blank');
     } else {
-      // Desktop: Google Maps web
       window.open(`https://www.google.com/maps/place/?q=${lat},${lon}`, '_blank');
     }
   },
 
-  // ===== CARICA ID S. CARLO MILANO =====
+  // ===== DIALOG SCELTA MAPPE SU iOS =====
+  showMapsChoiceDialog(location, lat, lon) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    `;
+
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 320px;
+      width: 100%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    `;
+
+    dialog.innerHTML = `
+      <div style="text-align: center; margin-bottom: 16px;">
+        <div style="font-size: 16px; font-weight: 700; color: var(--granata); margin-bottom: 4px;">📍 Apri con</div>
+        <div style="font-size: 13px; color: var(--gray-700);">${location}</div>
+      </div>
+      <button id="btn-apple-maps" style="
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 8px;
+        background: #007AFF;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+      ">🍎 Apple Maps</button>
+      <button id="btn-google-maps" style="
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 8px;
+        background: #4285F4;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+      ">🗺️ Google Maps</button>
+      <button id="btn-cancel-maps" style="
+        width: 100%;
+        padding: 12px;
+        background: var(--gray-200);
+        color: var(--gray-700);
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+      ">Annulla</button>
+    `;
+
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+
+    document.getElementById('btn-apple-maps').addEventListener('click', () => {
+      window.open(`http://maps.apple.com/?ll=${lat},${lon}&q=${encodeURIComponent(location)}`, '_blank');
+      document.body.removeChild(overlay);
+    });
+
+    document.getElementById('btn-google-maps').addEventListener('click', () => {
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`, '_blank');
+      document.body.removeChild(overlay);
+    });
+
+    document.getElementById('btn-cancel-maps').addEventListener('click', () => {
+      document.body.removeChild(overlay);
+    });
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        document.body.removeChild(overlay);
+      }
+    });
+  },
+
   async loadSanCarloId() {
     try {
       const { data, error } = await db
@@ -262,12 +262,11 @@ const WhatsAppPage = {
       if (error) throw error;
       this.sanCarloId = data?.id || null;
     } catch (err) {
-      console.error(' Errore caricamento ID S. Carlo:', err);
+      console.error('❌ Errore caricamento ID S. Carlo:', err);
       this.sanCarloId = null;
     }
   },
 
-  // ===== CALCOLA BOUNDS SETTIMANA CORRENTE =====
   getCurrentWeekBounds() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -281,17 +280,18 @@ const WhatsAppPage = {
     return { start: monday, end: sunday };
   },
 
-  // ===== CARICA PARTITE FUTURE SENZA CONVOCAZIONE =====
   async loadMatches() {
     const select = document.getElementById('conv-match');
     try {
-      const today = new Date().toISOString().split('T')[0];
-      console.log(' Cercando tutte le partite future dal', today);
+      const { start, end } = this.getCurrentWeekBounds();
+      const startStr = start.toISOString().split('T')[0];
+      const endStr = end.toISOString().split('T')[0];
 
       let query = db
         .from('matches')
         .select(`id, matchday, match_type, match_date, match_time, location, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`)
-        .gte('match_date', today)
+        .gte('match_date', startStr)
+        .lte('match_date', endStr)
         .order('match_date', { ascending: true })
         .order('match_time', { ascending: true });
 
@@ -299,37 +299,21 @@ const WhatsAppPage = {
         query = query.or(`home_team_id.eq.${this.sanCarloId},away_team_id.eq.${this.sanCarloId}`);
       }
 
-      const { data: allMatches, error } = await query;
+      const { data, error } = await query;
       if (error) throw error;
-      
-      console.log('✅ Partite future trovate:', allMatches?.length || 0);
-
-      // Carica convocazioni già salvate
-      const { data: existingConvocations, error: convErr } = await db
-        .from('convocations')
-        .select('match_id');
-      
-      if (convErr) console.error('❌ Errore caricamento convocazioni:', convErr);
-      
-      const matchesWithConvocation = new Set(existingConvocations?.map(c => c.match_id) || []);
-      console.log('🚫 Partite già convocate:', matchesWithConvocation.size);
-
-      // Filtra solo partite senza convocazione
-      const availableMatches = allMatches.filter(m => !matchesWithConvocation.has(m.id));
-      console.log('✅ Partite disponibili per convocazione:', availableMatches.length);
 
       let html = '<option value="">-- Seleziona partita --</option>';
-      if (availableMatches && availableMatches.length > 0) {
-        availableMatches.forEach(m => {
+      if (data && data.length > 0) {
+        data.forEach(m => {
           const date = new Date(m.match_date).toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' });
-          const typeLabel = m.match_type === 'andata' ? '🏁' : '';
+          const typeLabel = m.match_type === 'andata' ? '🏁' : '🔄';
           const homeName = m.home_team?.name || '?';
           const awayName = m.away_team?.name || '?';
           const timeStr = m.match_time ? ` · ⏰ ${m.match_time}` : '';
           html += `<option value="${m.id}" data-date="${m.match_date}" data-time="${m.match_time || ''}" data-location="${m.location || ''}" data-home="${homeName}" data-away="${awayName}">${typeLabel} G${m.matchday} · ${homeName} vs ${awayName} (${date}${timeStr})</option>`;
         });
       } else {
-        html = '<option value="">-- Nessuna partita disponibile --</option>';
+        html = '<option value="">-- Nessuna partita questa settimana --</option>';
       }
       select.innerHTML = html;
     } catch (err) {
@@ -337,13 +321,11 @@ const WhatsAppPage = {
     }
   },
 
-  // ===== QUANDO SI SELEZIONA UNA PARTITA =====
   async onMatchSelected(matchId) {
     document.getElementById('conv-date').value = '';
     document.getElementById('conv-location').value = '';
     document.getElementById('conv-meeting').value = '';
     document.getElementById('conv-kickoff').value = '';
-    document.getElementById('location-map-container').style.display = 'none';
     this.currentConvocationId = null;
 
     if (!matchId) {
@@ -360,11 +342,7 @@ const WhatsAppPage = {
     const matchLocation = option.dataset.location;
 
     if (matchDate) document.getElementById('conv-date').value = matchDate;
-    if (matchLocation) {
-      document.getElementById('conv-location').value = matchLocation;
-      // ✅ Mostra la mappa per il luogo della partita
-      this.initLocationMap(matchLocation);
-    }
+    if (matchLocation) document.getElementById('conv-location').value = matchLocation;
     if (matchTime) {
       document.getElementById('conv-kickoff').value = matchTime;
       const meetingTime = this.subtractMinutes(matchTime, 30);
@@ -430,7 +408,7 @@ const WhatsAppPage = {
           <span style="font-size: 11px; color: var(--gray-500); text-transform: capitalize;">${p.role || 'N.D.'}</span>
         </label>
       `).join('') || '<p style="color: var(--gray-500); text-align: center;">Nessun giocatore</p>';
-      
+
       container.querySelectorAll('.player-cb').forEach(cb => {
         cb.addEventListener('change', () => {
           if (cb.checked) this.selectedPlayers.add(cb.value);
@@ -474,7 +452,7 @@ const WhatsAppPage = {
         toast('Bozza precedente caricata', 'success');
       }
     } catch (err) {
-      console.error(' Errore caricamento bozza:', err);
+      console.error('❌ Errore caricamento bozza:', err);
     }
   },
 
@@ -518,17 +496,22 @@ const WhatsAppPage = {
       })
       .join('\n');
 
-    const msg = `🏟️ CONVOCAZIONE - ASD San Carlo Milano U9
+    // ✅ Link Google Maps universale
+    const mapsLink = location 
+      ? `\n🗺️ Mappa: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`
+      : '';
+
+    const msg = `️ CONVOCAZIONE - ASD San Carlo Milano U9
 ⚽ Partita: ${matchText}
- Data: ${dateStr}  Inizio: ${cleanTime(kickoff)}
+📅 Data: ${dateStr}  Inizio: ${cleanTime(kickoff)}
  Ritrovo PUNTUALI: ${cleanTime(meeting)}
-📍 Luogo: ${location || '[Da definire]'}
-🧦 Divisa: ${kit}
+📍 Luogo: ${location || '[Da definire]'}${mapsLink}
+ Divisa: ${kit}
 👇 CONVOCATI:
 ${selectedNames || '[Nessun giocatore selezionato]'}
 🎒 Da portare:
 ${selectedEquip || '[Nessun articolo selezionato]'}
-${notes ? `📝 *Note:* ${notes}\n` : ''}💚 In caso di assenza, contattare il mister con anticipo!
+${notes ? `\n📝 *Note:* ${notes}\n` : ''} In caso di assenza, contattare il mister con anticipo!
 ForzaRagazzi 💪⚽`;
 
     document.getElementById('msg-preview').value = msg;
@@ -586,7 +569,7 @@ ForzaRagazzi 💪⚽`;
 
   async sendConvocationNotification(playerIds) {
     try {
-      console.log(' Invio notifica convocazione ai player:', playerIds);
+      console.log('📤 Invio notifica convocazione ai player:', playerIds);
       const { data: playersData, error } = await db
         .from('players')
         .select('id, parent_id, parent_id_2, first_name, last_name')
@@ -605,7 +588,7 @@ ForzaRagazzi 💪⚽`;
         console.warn('⚠️ Nessun parent_id trovato per i player selezionati');
         return;
       }
-      console.log(' Invio notifica a user_id:', userIds);
+      console.log('📤 Invio notifica a user_id:', userIds);
       const matchOption = document.getElementById('conv-match').selectedOptions[0];
       const matchText = matchOption ? matchOption.textContent.split('·')[1]?.trim() || 'prossima partita' : 'prossima partita';
       const meeting = document.getElementById('conv-meeting').value;
@@ -631,7 +614,7 @@ ForzaRagazzi 💪⚽`;
       ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
-      toast('Messaggio copiato! 📋', 'success');
+      toast('Messaggio copiato! ', 'success');
     }
   },
 
@@ -672,10 +655,10 @@ ForzaRagazzi 💪⚽`;
 
   quickMessages: [
     {
-      label: '🏃‍️ Promemoria Allenamento',
+      label: '🏃♂️ Promemoria Allenamento',
       generator: () => {
         const date = document.getElementById('conv-date').value || '[data allenamento]';
-        return `🔔 *PROMEMORIA ALLENAMENTO*\n\nCiao a tutti! Ricordatevi di confermare la presenza per l'allenamento del ${date ? new Date(date).toLocaleDateString('it-IT') : '[data da definire]'}. \n\n Conferma qui: https://under9.asdsancarlomilano.it\n\nGrazie! `;
+        return `🔔 *PROMEMORIA ALLENAMENTO*\n\nCiao a tutti! Ricordatevi di confermare la presenza per l'allenamento del ${date ? new Date(date).toLocaleDateString('it-IT') : '[data da definire]'}. \n\n📲 Conferma qui: https://under9.asdsancarlomilano.it\n\nGrazie! ⚽`;
       }
     },
     {
@@ -683,13 +666,13 @@ ForzaRagazzi 💪⚽`;
       generator: () => {
         const match = document.getElementById('conv-match').selectedOptions[0]?.textContent || '[partita]';
         const time = document.getElementById('conv-meeting').value || '[ora]';
-        return `⚽ *RICORDO PARTITA*\n\nVi aspetto per ${match}!\n⏰ Ritrovo: ${time}\n\nPortate tutto il materiale e tanta grinta! 💪`;
+        return ` *RICORDO PARTITA*\n\nVi aspetto per ${match}!\n⏰ Ritrovo: ${time}\n\nPortate tutto il materiale e tanta grinta! 💪`;
       }
     },
     {
       label: '📢 Cambio Orario/Luogo',
       generator: () => {
-        return `📢 *AGGIORNAMENTO IMPORTANTE*\n\nL'allenamento/partita subisce una variazione.\n Nuovo luogo: [Da comunicare]\n Nuovo orario: [Da comunicare]\n\nVi preghiamo di confermare la ricezione. Grazie! 🙏`;
+        return `📢 *AGGIORNAMENTO IMPORTANTE*\n\nL'allenamento/partita subisce una variazione.\n📍 Nuovo luogo: [Da comunicare]\n⏰ Nuovo orario: [Da comunicare]\n\nVi preghiamo di confermare la ricezione. Grazie! 🙏`;
       }
     },
     {
