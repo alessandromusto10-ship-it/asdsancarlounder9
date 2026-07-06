@@ -8,7 +8,8 @@ const PushManager = {
   async init() {
     console.log('🔔 PushManager: init()');
 
-    // ✅ STEP 1: Registra SUBITO il Service Worker (funziona su iOS e Android)
+    // ✅ CRITICO PER iOS: Registra il Service Worker SUBITO all'avvio
+    // Deve essere fatto PRIMA del login, altrimenti le notifiche in background non funzionano
     if ('serviceWorker' in navigator && !this.serviceWorkerRegistered) {
       try {
         const registration = await navigator.serviceWorker.register('/OneSignalSDKWorker.js', {
@@ -21,7 +22,7 @@ const PushManager = {
       }
     }
 
-    // ✅ STEP 2: Monitora il login
+    // Monitora il login
     const checkAuth = async () => {
       try {
         const { data: { user } } = await db.auth.getUser();
@@ -85,15 +86,12 @@ const PushManager = {
 
   async checkAndSave() {
     const OneSignal = window.OneSignal;
-    if (!OneSignal) {
-      console.warn('⚠️ OneSignal non disponibile in checkAndSave');
-      return;
-    }
+    if (!OneSignal) return;
 
     const perm = OneSignal.Notifications.permission;
     console.log('📋 Current permission:', perm);
 
-    // ✅ Rileva se siamo su iOS PWA
+    // ✅ Rileva iOS PWA
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     const isStandalone = window.navigator.standalone || 
                          window.matchMedia('(display-mode: standalone)').matches;
@@ -105,10 +103,9 @@ const PushManager = {
       console.log('✅ Permesso già concesso, salvo subscription');
       setTimeout(() => this.saveSubscription(), 2000);
     } else if (perm === 'default') {
-      // ✅ SOLO SU iOS PWA: Chiedi esplicitamente il permesso
-      // Su Android, OneSignal mostra il popup automaticamente
+      // ✅ SU iOS PWA: Chiedi esplicitamente il permesso (non parte automaticamente)
       if (isIOSPWA) {
-        console.log('⏳ iOS PWA: Permesso non ancora richiesto, lo chiedo ora...');
+        console.log('⏳ iOS PWA: Chiedo esplicitamente il permesso...');
         try {
           const result = await OneSignal.Notifications.requestPermission();
           console.log('📋 Risultato richiesta permesso:', result);
@@ -118,9 +115,8 @@ const PushManager = {
         } catch (err) {
           console.error('❌ Errore richiesta permesso:', err);
         }
-      } else {
-        console.log('⏳ Android/Web: Aspetto che OneSignal mostri il popup automaticamente');
       }
+      // Su Android/Web: OneSignal mostra il popup automaticamente
     } else if (perm === 'denied') {
       console.warn('⚠️ Permesso notifiche RIFIUTATO');
     }
@@ -141,7 +137,7 @@ const PushManager = {
         return;
       }
 
-      // ✅ RETRY LOOP: Su iOS il subscription ID può arrivare con ritardo
+      // ✅ RETRY LOOP: Su iOS il subscription ID può arrivare con ritardo (fino a 15s)
       const maxRetries = 10;
       let userId = null;
       let optIn = false;
@@ -152,10 +148,7 @@ const PushManager = {
         
         console.log(`🔄 Tentativo ${i}/${maxRetries} - User ID:`, userId, '- Opt-in:', optIn);
 
-        if (userId && optIn) {
-          break;
-        }
-
+        if (userId && optIn) break;
         await new Promise(resolve => setTimeout(resolve, 1500));
       }
 
@@ -192,7 +185,6 @@ const PushManager = {
         console.error('❌ Errore DB:', error);
       } else {
         console.log('✅ Subscription salvata/aggiornata per utente:', user.id);
-        console.log('✅ Dati salvati:', data);
       }
     } catch (err) {
       console.error('❌ Errore saveSubscription:', err);
@@ -246,11 +238,8 @@ const PushManager = {
         .from('push_subscriptions')
         .delete()
         .eq('user_id', user.id);
-      if (error) {
-        console.error('❌ Errore eliminazione:', error);
-      } else {
-        console.log('🗑️ Subscription eliminata');
-      }
+      if (error) console.error('❌ Errore eliminazione:', error);
+      else console.log('🗑️ Subscription eliminata');
     } catch (err) {
       console.error('❌ Errore deleteSubscription:', err);
     }
