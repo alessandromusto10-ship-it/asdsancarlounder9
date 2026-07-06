@@ -9,10 +9,10 @@ const WhatsAppPage = {
   EQUIPMENT_LIST: [
     { id: 'borraccia', label: 'Borraccia', emoji: '💧' },
     { id: 'pantaloncini', label: 'Pantaloncini ERREA', emoji: '🩳' },
-    { id: 'parastinchi', label: 'Parastinchi', emoji: '🛡️' },
+    { id: 'parastinchi', label: 'Parastinchi', emoji: '️' },
     { id: 'scarpe', label: 'Scarpe da calcio', emoji: '👟' },
     { id: 'maglia', label: 'Maglia con numero', emoji: '👕' },
-    { id: 'calzettoni', label: 'Calzettoni', emoji: '' },
+    { id: 'calzettoni', label: 'Calzettoni', emoji: '🧦' },
     { id: 'tuta', label: 'Tuta di rappresentanza', emoji: '🏃‍♂️' },
     { id: 'giaccone', label: 'Giaccone', emoji: '🧥' },
     { id: 'kway', label: 'Kway', emoji: '🌧️' }
@@ -21,7 +21,7 @@ const WhatsAppPage = {
   async render() {
     const view = document.getElementById('view');
     view.innerHTML = `
-      <h2 style="color: var(--granata); margin-bottom: 16px;"> WhatsApp Convocazioni</h2>
+      <h2 style="color: var(--granata); margin-bottom: 16px;">📱 WhatsApp Convocazioni</h2>
       <div class="card">
         <div class="card-title">🏟️ Dettagli Convocazione</div>
         <form id="convocation-form">
@@ -41,7 +41,6 @@ const WhatsAppPage = {
               <input type="text" id="conv-location" class="form-control" placeholder="Es: Campo San Carlo" />
             </div>
           </div>
-          <!-- ✅ MAPPA ANTEPRIMA LUOGO -->
           <div id="location-map-container" style="display: none; margin-top: 8px;">
             <div id="location-map" style="height: 180px; border-radius: 8px; overflow: hidden; border: 1px solid var(--gray-200);"></div>
             <button type="button" id="btn-open-maps" style="margin-top: 8px; width: 100%; padding: 8px; background: var(--granata); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
@@ -59,7 +58,7 @@ const WhatsAppPage = {
             </div>
           </div>
           <div class="form-group">
-            <label> Divisa / Kit</label>
+            <label>🧦 Divisa / Kit</label>
             <input type="text" id="conv-kit" class="form-control" value="Maglia granata, pantaloncini neri, calzettoni granata" />
           </div>
           <div class="form-group">
@@ -90,7 +89,7 @@ const WhatsAppPage = {
         </div>
       </div>
       <div class="card">
-        <div class="card-title">📋 Anteprima Messaggio</div>
+        <div class="card-title"> Anteprima Messaggio</div>
         <textarea id="msg-preview" class="form-control" rows="12" readonly style="font-family: monospace; font-size: 13px; background: var(--gray-50);"></textarea>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;">
           <button id="btn-save-conv" class="btn btn-secondary">💾 Salva Bozza</button>
@@ -107,11 +106,9 @@ const WhatsAppPage = {
       </div>
     `;
 
-    // Event Listeners
     document.getElementById('conv-match').addEventListener('change', (e) => this.onMatchSelected(e.target.value));
     document.getElementById('conv-date').addEventListener('input', () => this.updatePreview());
 
-    // ✅ Event Listener Luogo con geocodifica live (debounce 800ms)
     let locationTimeout;
     document.getElementById('conv-location').addEventListener('input', (e) => {
       clearTimeout(locationTimeout);
@@ -124,7 +121,6 @@ const WhatsAppPage = {
       this.updatePreview();
     });
 
-    // ✅ Pulsante Apri Mappe
     document.getElementById('btn-open-maps').addEventListener('click', () => {
       const location = document.getElementById('conv-location').value;
       if (location) this.openInMaps(location);
@@ -151,7 +147,6 @@ const WhatsAppPage = {
     this.updatePreview();
   },
 
-  // ===== GEOCODIFICA CON NOMINATIM =====
   async geocodeLocation(address) {
     try {
       const response = await fetch(
@@ -166,7 +161,6 @@ const WhatsAppPage = {
     }
   },
 
-  // ===== INIZIALIZZA MAPPA ANTEPRIMA =====
   async initLocationMap(location) {
     const container = document.getElementById('location-map-container');
     const mapDiv = document.getElementById('location-map');
@@ -204,7 +198,6 @@ const WhatsAppPage = {
     setTimeout(() => this.locationMap.invalidateSize(), 100);
   },
 
-  // ===== APRI MAPPE CON SCELTA SU iOS =====
   async openInMaps(location) {
     const coords = await this.geocodeLocation(location);
     if (!coords) {
@@ -226,22 +219,9 @@ const WhatsAppPage = {
     }
   },
 
-  // ===== DIALOG SCELTA MAPPE SU iOS =====
   showMapsChoiceDialog(location, lat, lon) {
     const overlay = document.createElement('div');
-    overlay.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    `;
+    overlay.style.cssText = `position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;`;
 
     const dialog = document.createElement('div');
     dialog.style.cssText = `
@@ -334,19 +314,18 @@ const WhatsAppPage = {
     }
   },
 
-  // ===== CARICA PARTITE DELLA SETTIMANA CORRENTE =====
+  // ===== CARICA TUTTE LE PARTITE FUTURE SENZA CONVOCAZIONE =====
   async loadMatches() {
     const select = document.getElementById('conv-match');
     try {
-      const { start, end } = this.getCurrentWeekBounds();
-      const startStr = start.toISOString().split('T')[0];
-      const endStr = end.toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0];
+      console.log('🔍 Cercando tutte le partite future dal', today);
 
+      // 1. Carica tutte le partite future di S. Carlo
       let query = db
         .from('matches')
         .select(`id, matchday, match_type, match_date, match_time, location, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`)
-        .gte('match_date', startStr)
-        .lte('match_date', endStr)
+        .gte('match_date', today)
         .order('match_date', { ascending: true })
         .order('match_time', { ascending: true });
 
@@ -354,12 +333,29 @@ const WhatsAppPage = {
         query = query.or(`home_team_id.eq.${this.sanCarloId},away_team_id.eq.${this.sanCarloId}`);
       }
 
-      const { data, error } = await query;
+      const { data: allMatches, error } = await query;
       if (error) throw error;
 
+      console.log('✅ Partite future trovate:', allMatches?.length || 0);
+
+      // 2. Carica tutte le convocazioni già salvate
+      const { data: existingConvocations, error: convErr } = await db
+        .from('convocations')
+        .select('match_id');
+
+      if (convErr) console.error('❌ Errore caricamento convocazioni:', convErr);
+
+      const matchesWithConvocation = new Set(existingConvocations?.map(c => c.match_id) || []);
+      console.log('🚫 Partite già convocate:', matchesWithConvocation.size);
+
+      // 3. Filtra solo le partite SENZA convocazione
+      const availableMatches = allMatches.filter(m => !matchesWithConvocation.has(m.id));
+      console.log('✅ Partite disponibili per convocazione:', availableMatches.length);
+
+      // 4. Popola il dropdown
       let html = '<option value="">-- Seleziona partita --</option>';
-      if (data && data.length > 0) {
-        data.forEach(m => {
+      if (availableMatches && availableMatches.length > 0) {
+        availableMatches.forEach(m => {
           const date = new Date(m.match_date).toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' });
           const typeLabel = m.match_type === 'andata' ? '🏁' : '🔄';
           const homeName = m.home_team?.name || '?';
@@ -368,25 +364,13 @@ const WhatsAppPage = {
           html += `<option value="${m.id}" data-date="${m.match_date}" data-time="${m.match_time || ''}" data-location="${m.location || ''}" data-home="${homeName}" data-away="${awayName}">${typeLabel} G${m.matchday} · ${homeName} vs ${awayName} (${date}${timeStr})</option>`;
         });
       } else {
-        html = '<option value="">-- Nessuna partita questa settimana --</option>';
+        html = '<option value="">-- Nessuna partita disponibile --</option>';
       }
       select.innerHTML = html;
     } catch (err) {
       toast('Errore caricamento partite: ' + err.message, 'error');
+      console.error('❌ Errore loadMatches:', err);
     }
-  },
-
-  getCurrentWeekBounds() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dayOfWeek = today.getDay();
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const monday = new Date(today);
-    monday.setDate(today.getDate() + mondayOffset);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-    return { start: monday, end: sunday };
   },
 
   async onMatchSelected(matchId) {
@@ -573,12 +557,12 @@ const WhatsAppPage = {
       ? `\n🗺️ Mappa: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`
       : '';
 
-    const msg = `️ CONVOCAZIONE - ASD San Carlo Milano U9
-⚽ Partita: ${matchText}
+    const msg = `🏟️ CONVOCAZIONE - ASD San Carlo Milano U9
+ Partita: ${matchText}
 📅 Data: ${dateStr}  Inizio: ${cleanTime(kickoff)}
- Ritrovo PUNTUALI: ${cleanTime(meeting)}
+⏰ Ritrovo PUNTUALI: ${cleanTime(meeting)}
 📍 Luogo: ${location || '[Da definire]'}${mapsLink}
- Divisa: ${kit}
+🧦 Divisa: ${kit}
 👇 CONVOCATI:
 ${selectedNames || '[Nessun giocatore selezionato]'}
 🎒 Da portare:
@@ -660,7 +644,7 @@ ForzaRagazzi 💪⚽`;
         console.warn('⚠️ Nessun parent_id trovato per i player selezionati');
         return;
       }
-      console.log('📤 Invio notifica a user_id:', userIds);
+      console.log(' Invio notifica a user_id:', userIds);
       const matchOption = document.getElementById('conv-match').selectedOptions[0];
       const matchText = matchOption ? matchOption.textContent.split('·')[1]?.trim() || 'prossima partita' : 'prossima partita';
       const meeting = document.getElementById('conv-meeting').value;
@@ -678,7 +662,7 @@ ForzaRagazzi 💪⚽`;
   copyMessage() {
     const msg = document.getElementById('msg-preview').value;
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(msg).then(() => toast('Messaggio copiato! 📋', 'success'));
+      navigator.clipboard.writeText(msg).then(() => toast('Messaggio copiato! ', 'success'));
     } else {
       const ta = document.createElement('textarea');
       ta.value = msg;
@@ -686,7 +670,7 @@ ForzaRagazzi 💪⚽`;
       ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
-      toast('Messaggio copiato! ', 'success');
+      toast('Messaggio copiato! 📋', 'success');
     }
   },
 
@@ -727,10 +711,10 @@ ForzaRagazzi 💪⚽`;
 
   quickMessages: [
     {
-      label: '🏃♂️ Promemoria Allenamento',
+      label: '🏃‍️ Promemoria Allenamento',
       generator: () => {
         const date = document.getElementById('conv-date').value || '[data allenamento]';
-        return `🔔 *PROMEMORIA ALLENAMENTO*\n\nCiao a tutti! Ricordatevi di confermare la presenza per l'allenamento del ${date ? new Date(date).toLocaleDateString('it-IT') : '[data da definire]'}. \n\n📲 Conferma qui: https://under9.asdsancarlomilano.it\n\nGrazie! ⚽`;
+        return `🔔 *PROMEMORIA ALLENAMENTO*\n\nCiao a tutti! Ricordatevi di confermare la presenza per l'allenamento del ${date ? new Date(date).toLocaleDateString('it-IT') : '[data da definire]'}. \n\n Conferma qui: https://under9.asdsancarlomilano.it\n\nGrazie! ⚽`;
       }
     },
     {
@@ -761,7 +745,7 @@ ForzaRagazzi 💪⚽`;
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--gray-200); gap: 8px;">
         <span style="font-size: 14px; font-weight: 500; flex: 1; min-width: 0;">${qm.label}</span>
         <div style="display: flex; gap: 6px; flex-shrink: 0;">
-          <button class="btn btn-secondary" data-copy-idx="${i}" style="font-size: 12px; padding: 6px 12px; min-height: 32px;"> Copia</button>
+          <button class="btn btn-secondary" data-copy-idx="${i}" style="font-size: 12px; padding: 6px 12px; min-height: 32px;">📋 Copia</button>
           <button class="btn btn-primary" data-wa-idx="${i}" style="font-size: 12px; padding: 6px 12px; min-height: 32px;">📲 WhatsApp</button>
         </div>
       </div>
