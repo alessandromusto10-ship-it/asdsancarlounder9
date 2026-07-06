@@ -159,62 +159,76 @@ const WhatsAppPage = {
     }
   },
 
-  // ===== CALCOLA BOUNDS SETTIMANA CORRENTE (Lun-Dom) =====
-  getCurrentWeekBounds() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dayOfWeek = today.getDay();
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const monday = new Date(today);
-    monday.setDate(today.getDate() + mondayOffset);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-    return { start: monday, end: sunday };
-  },
+ // ===== CALCOLA BOUNDS SETTIMANA CORRENTE (Lun-Dom) =====
+getCurrentWeekBounds() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const dayOfWeek = today.getDay(); // 0=Domenica, 1=Lunedì, ..., 6=Sabato
+  
+  // Calcola il lunedì della settimana corrente
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - daysToMonday);
+  monday.setHours(0, 0, 0, 0);
+  
+  // Calcola la domenica della settimana corrente
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  
+  console.log('📅 Settimana corrente:', monday.toLocaleDateString('it-IT'), 'al', sunday.toLocaleDateString('it-IT'));
+  
+  return { start: monday, end: sunday };
+},
 
-  // ===== CARICA SOLO PARTITE S. CARLO DELLA SETTIMANA =====
-  async loadMatches() {
-    const select = document.getElementById('conv-match');
-    try {
-      const { start, end } = this.getCurrentWeekBounds();
-      const startStr = start.toISOString().split('T')[0];
-      const endStr = end.toISOString().split('T')[0];
+ // ===== CARICA SOLO PARTITE S. CARLO DELLA SETTIMANA =====
+async loadMatches() {
+  const select = document.getElementById('conv-match');
+  try {
+    const { start, end } = this.getCurrentWeekBounds();
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = end.toISOString().split('T')[0];
+    
+    console.log('🔍 Cercando partite dal', startStr, 'al', endStr);
 
-      let query = db
-        .from('matches')
-        .select(`id, matchday, match_type, match_date, match_time, location, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`)
-        .gte('match_date', startStr)
-        .lte('match_date', endStr)
-        .order('match_date', { ascending: true })
-        .order('match_time', { ascending: true });
+    let query = db
+      .from('matches')
+      .select(`id, matchday, match_type, match_date, match_time, location, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`)
+      .gte('match_date', startStr)
+      .lte('match_date', endStr)
+      .order('match_date', { ascending: true })
+      .order('match_time', { ascending: true });
 
-      // Filtra solo partite di S. Carlo Milano
-      if (this.sanCarloId) {
-        query = query.or(`home_team_id.eq.${this.sanCarloId},away_team_id.eq.${this.sanCarloId}`);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      let html = '<option value="">-- Seleziona partita --</option>';
-      if (data && data.length > 0) {
-        data.forEach(m => {
-          const date = new Date(m.match_date).toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' });
-          const typeLabel = m.match_type === 'andata' ? '🏁' : '';
-          const homeName = m.home_team?.name || '?';
-          const awayName = m.away_team?.name || '?';
-          const timeStr = m.match_time ? ` · ⏰ ${m.match_time}` : '';
-          html += `<option value="${m.id}" data-date="${m.match_date}" data-time="${m.match_time || ''}" data-location="${m.location || ''}" data-home="${homeName}" data-away="${awayName}">${typeLabel} G${m.matchday} · ${homeName} vs ${awayName} (${date}${timeStr})</option>`;
-        });
-      } else {
-        html = '<option value="">-- Nessuna partita questa settimana --</option>';
-      }
-      select.innerHTML = html;
-    } catch (err) {
-      toast('Errore caricamento partite: ' + err.message, 'error');
+    // Filtra solo partite di S. Carlo Milano
+    if (this.sanCarloId) {
+      query = query.or(`home_team_id.eq.${this.sanCarloId},away_team_id.eq.${this.sanCarloId}`);
     }
-  },
+
+    const { data, error } = await query;
+    if (error) throw error;
+    
+    console.log('✅ Partite trovate:', data?.length || 0);
+
+    let html = '<option value="">-- Seleziona partita --</option>';
+    if (data && data.length > 0) {
+      data.forEach(m => {
+        const date = new Date(m.match_date).toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' });
+        const typeLabel = m.match_type === 'andata' ? '🏁' : '';
+        const homeName = m.home_team?.name || '?';
+        const awayName = m.away_team?.name || '?';
+        const timeStr = m.match_time ? ` · ⏰ ${m.match_time}` : '';
+        html += `<option value="${m.id}" data-date="${m.match_date}" data-time="${m.match_time || ''}" data-location="${m.location || ''}" data-home="${homeName}" data-away="${awayName}">${typeLabel} G${m.matchday} · ${homeName} vs ${awayName} (${date}${timeStr})</option>`;
+      });
+    } else {
+      html = '<option value="">-- Nessuna partita questa settimana --</option>';
+    }
+    select.innerHTML = html;
+  } catch (err) {
+    toast('Errore caricamento partite: ' + err.message, 'error');
+    console.error('❌ Errore loadMatches:', err);
+  }
+},
 
   // ===== QUANDO SI SELEZIONA UNA PARTITA: AUTO-COMPILA I CAMPI =====
   async onMatchSelected(matchId) {
