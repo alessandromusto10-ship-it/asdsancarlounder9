@@ -225,7 +225,7 @@ async loadMatches() {
     if (availableMatches && availableMatches.length > 0) {
       availableMatches.forEach(m => {
         const date = new Date(m.match_date).toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' });
-        const typeLabel = m.match_type === 'andata' ? '🏁' : '';
+        const typeLabel = m.match_type === 'andata' ? '🏁' : '🔄';
         const homeName = m.home_team?.name || '?';
         const awayName = m.away_team?.name || '?';
         const timeStr = m.match_time ? ` · ⏰ ${m.match_time}` : '';
