@@ -29,6 +29,19 @@ const CalendarPage = {
     
     await this.loadMonthCalendar();
     await this.loadWeekForMonth();
+	
+    // ✅ Auto-aggiorna la settimana quando l'app torna attiva
+    if (!this._weekRefreshAttached) {
+     document.addEventListener('visibilitychange', () => {
+       if (document.visibilityState === 'visible') {
+        console.log(' App tornata visibile, aggiorno settimana...');
+        this.loadWeekForMonth();
+      }
+    });
+    window.addEventListener('focus', () => this.loadWeekForMonth());
+    this._weekRefreshAttached = true;
+   }
+   
   },
 
   changeMonth(delta) {
