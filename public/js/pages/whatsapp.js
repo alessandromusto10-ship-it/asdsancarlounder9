@@ -572,7 +572,7 @@ ${selectedNames || '[Nessun giocatore selezionato]'}
 ${selectedEquip || '[Nessun articolo selezionato]'}
 
 ${notes ? `\n📝 *Note:* ${notes}\n` : ''}💚 In caso di assenza, contattare il mister con anticipo!
-ForzaRagazzi 💪⚽`;
+Forza Ragazzi!!! 💪⚽`;
 
     document.getElementById('msg-preview').value = msg;
   },
