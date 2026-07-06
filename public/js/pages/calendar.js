@@ -49,8 +49,8 @@ const CalendarPage = {
     this.loadWeekForMonth();
   },
 
-  // ✅ Mostra SEMPRE gli eventi della settimana corrente (lunedì-domenica basata su oggi)
-  // Non guarda i mesi, guarda solo i giorni della settimana
+  // ✅ Mostra SEMPRE la settimana corrente reale (lunedì-domenica basata su oggi)
+  // Funziona per tutti i mesi dell'anno
   async loadWeekForMonth() {
     const container = document.getElementById('week-events');
     
@@ -160,7 +160,7 @@ const CalendarPage = {
           <div class="card" style="background: rgba(122,31,46,0.08); border-left: 4px solid var(--granata); margin-bottom: 8px;">
             <div style="font-weight: 700; color: var(--granata);">🏃 Allenamento</div>
             <div style="margin-top: 6px; font-size: 14px;">
-               ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
+              📅 ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
                ${formatTime(t.time)}<br>
               ${t.location ? '📍 ' + t.location + '<br>' : ''}
               ${t.notes ? '📝 ' + t.notes : ''}
@@ -180,7 +180,7 @@ const CalendarPage = {
         
         html += `
           <div class="card" style="background: rgba(245,158,11,0.08); border-left: 4px solid var(--warning); margin-bottom: 8px;">
-            <div style="font-weight: 700; color: var(--warning);">⚽ Partita · ${m.match_type === 'andata' ? 'Andata' : 'Ritorno'} G${m.matchday || '?'}</div>
+            <div style="font-weight: 700; color: var(--warning);"> Partita · ${m.match_type === 'andata' ? 'Andata' : 'Ritorno'} G${m.matchday || '?'}</div>
             <div style="margin-top: 6px; font-size: 14px;">
               📅 ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
               ⏰ ${m.match_time ? formatTime(m.match_time) : 'n.d.'}<br>
