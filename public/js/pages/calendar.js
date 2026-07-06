@@ -1,23 +1,17 @@
 const CalendarPage = {
   currentYear: new Date().getFullYear(),
-  currentMonth: new Date().getMonth(), // 0-11
+  currentMonth: new Date().getMonth(),
 
   async render() {
     const view = document.getElementById('view');
     view.innerHTML = `
       <h2 style="color: var(--granata); margin-bottom: 16px;">📅 Calendario</h2>
-      
-      <!-- Navigazione Mese -->
       <div class="flex-between mb-4">
         <button class="icon-btn" id="prev-month" style="background: var(--gray-200);">◀</button>
         <h3 id="current-month-label" style="color: var(--granata);"></h3>
         <button class="icon-btn" id="next-month" style="background: var(--gray-200);">▶</button>
       </div>
-      
-      <!-- Griglia Calendario -->
       <div class="calendar-grid" id="calendar-grid"></div>
-      
-      <!-- Sezione "Questa Settimana" (SOTTO il calendario) -->
       <div class="card" id="this-week-section" style="margin-top: 16px;">
         <div class="card-title">📋 Questa Settimana</div>
         <div id="week-events" style="min-height: 60px;"></div>
@@ -29,19 +23,17 @@ const CalendarPage = {
     
     await this.loadMonthCalendar();
     await this.loadWeekForMonth();
-	
-    // ✅ Auto-aggiorna la settimana quando l'app torna attiva
+    
+    // Auto-aggiorna quando l'app torna attiva
     if (!this._weekRefreshAttached) {
-     document.addEventListener('visibilitychange', () => {
-       if (document.visibilityState === 'visible') {
-        console.log(' App tornata visibile, aggiorno settimana...');
-        this.loadWeekForMonth();
-      }
-    });
-    window.addEventListener('focus', () => this.loadWeekForMonth());
-    this._weekRefreshAttached = true;
-   }
-   
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          this.loadWeekForMonth();
+        }
+      });
+      window.addEventListener('focus', () => this.loadWeekForMonth());
+      this._weekRefreshAttached = true;
+    }
   },
 
   changeMonth(delta) {
@@ -57,8 +49,31 @@ const CalendarPage = {
     this.loadWeekForMonth();
   },
 
+  // ✅ Mostra SEMPRE gli eventi della settimana corrente (lunedì-domenica basata su oggi)
+  // Non guarda i mesi, guarda solo i giorni della settimana
   async loadWeekForMonth() {
     const container = document.getElementById('week-events');
+    
+    // 1. Calcola il lunedì e la domenica della settimana corrente (basata su OGGI)
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0=Domenica, 1=Lunedì, ..., 6=Sabato
+    
+    // Vai al lunedì della settimana corrente
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - daysToMonday);
+    monday.setHours(0, 0, 0, 0);
+    
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+    
+    const startStr = this.formatDate(monday);
+    const endStr = this.formatDate(sunday);
+    
+    console.log(`📅 Settimana corrente: dal ${startStr} al ${endStr}`);
+    
+    // 2. Recupera la squadra S. Carlo
     const { data: teamData, error: tErr } = await db
       .from('teams')
       .select('id')
@@ -71,62 +86,15 @@ const CalendarPage = {
     }
     
     const sanCarloId = teamData.id;
-    const today = new Date();
-    const isCurrentMonth = today.getMonth() === this.currentMonth && today.getFullYear() === this.currentYear;
     
-    let monday, sunday;
-    
-    if (isCurrentMonth) {
-      // ✅ MESE CORRENTE: mostra la settimana corrente (lunedì-domenica basata su oggi)
-      const dayOfWeek = today.getDay(); // 0=Domenica, 1=Lunedì, ..., 6=Sabato
-      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-      monday = new Date(today);
-      monday.setDate(today.getDate() - daysToMonday);
-      monday.setHours(0, 0, 0, 0);
-      
-      sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-      sunday.setHours(23, 59, 59, 999);
-      
-      console.log(`📅 Mese corrente: mostra settimana ${monday.getDate()}-${sunday.getDate()} ${monday.toLocaleDateString('it-IT', { month: 'long' })}`);
-    } else {
-      // ✅ ALTRO MESE: trova la prima settimana con eventi
-      const firstDayOfMonth = new Date(this.currentYear, this.currentMonth, 1);
-      const lastDayOfMonth = new Date(this.currentYear, this.currentMonth + 1, 0);
-      
-      // Trova il lunedì della prima settimana del mese
-      let currentDate = new Date(firstDayOfMonth);
-      const dayOfWeek = currentDate.getDay();
-      const daysToMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7;
-      if (daysToMonday > 0) {
-        currentDate.setDate(currentDate.getDate() + daysToMonday);
-      }
-      if (currentDate.getDate() > 1) {
-        currentDate.setDate(currentDate.getDate() - 7);
-      }
-      
-      monday = new Date(currentDate);
-      monday.setHours(0, 0, 0, 0);
-      sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-      sunday.setHours(23, 59, 59, 999);
-      
-      console.log(`📅 Mese diverso: mostra prima settimana ${monday.getDate()}-${sunday.getDate()} ${monday.toLocaleDateString('it-IT', { month: 'long' })}`);
-    }
-    
-    const startStr = this.formatDate(monday);
-    const endStr = this.formatDate(sunday);
-    
-    console.log(`📅 Cercando eventi dal ${startStr} al ${endStr}`);
-    
-    // Recupera ALLENAMENTI della settimana
+    // 3. Recupera ALLENAMENTI di questa settimana (lunedì-domenica)
     const { data: trainings, error: trErr } = await db
       .from('trainings')
       .select('*')
       .gte('date', startStr)
       .lte('date', endStr);
     
-    // Recupera PARTITE della settimana
+    // 4. Recupera PARTITE di questa settimana (lunedì-domenica)
     const { data: matches, error: mErr } = await db
       .from('matches')
       .select(`*, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`)
@@ -137,7 +105,7 @@ const CalendarPage = {
     if (trErr) console.error('Errore trainings:', trErr);
     if (mErr) console.error('Errore matches:', mErr);
     
-    // Unisci eventi
+    // 5. Unisci eventi
     const events = [];
     
     if (trainings && trainings.length > 0) {
@@ -148,16 +116,16 @@ const CalendarPage = {
     
     if (matches && matches.length > 0) {
       matches.forEach(m => {
-        const matchDate = m.match_date || m.date;
-        events.push({ type: 'match', data: m, date: matchDate });
+        events.push({ type: 'match', data: m, date: m.match_date });
       });
     }
     
-    // Ordina per data
+    // 6. Ordina per data
     events.sort((a, b) => new Date(a.date) - new Date(b.date));
     
     console.log(`📊 Totale eventi questa settimana: ${events.length}`);
     
+    // 7. Mostra eventi o messaggio vuoto
     if (events.length > 0) {
       this.renderWeekEvents(events);
     } else {
@@ -192,8 +160,8 @@ const CalendarPage = {
           <div class="card" style="background: rgba(122,31,46,0.08); border-left: 4px solid var(--granata); margin-bottom: 8px;">
             <div style="font-weight: 700; color: var(--granata);">🏃 Allenamento</div>
             <div style="margin-top: 6px; font-size: 14px;">
-              📅 ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
-              ⏰ ${formatTime(t.time)}<br>
+               ${dayName} ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}<br>
+               ${formatTime(t.time)}<br>
               ${t.location ? '📍 ' + t.location + '<br>' : ''}
               ${t.notes ? '📝 ' + t.notes : ''}
             </div>
@@ -293,19 +261,16 @@ const CalendarPage = {
     
     let html = '';
     
-    // Header giorni della settimana
     const weekDays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
     weekDays.forEach(day => {
       html += `<div class="calendar-day-header">${day}</div>`;
     });
     
-    // Calcola i giorni vuoti all'inizio del mese
     let emptyDays = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
     for (let i = 0; i < emptyDays; i++) {
       html += `<div class="calendar-day empty"></div>`;
     }
     
-    // Giorni del mese
     for (let day = 1; day <= daysInMonth; day++) {
       const isToday = isCurrentMonth && day === todayDate;
       const hasEvents = eventsMap[day] && eventsMap[day].length > 0;
