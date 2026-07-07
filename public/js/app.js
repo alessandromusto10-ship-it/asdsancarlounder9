@@ -84,6 +84,12 @@ function openBottomSheet() {
   $('#bottom-sheet-overlay')?.classList.add('show');
   $('#bottom-sheet')?.classList.add('show');
   document.querySelector('.nav-item-gear')?.classList.add('open');
+  
+  // ✅ Forza z-index alto sul bottom sheet (sopra la mappa Leaflet)
+  const sheet = $('#bottom-sheet');
+  const overlay = $('#bottom-sheet-overlay');
+  if (sheet) sheet.style.zIndex = '10000';
+  if (overlay) overlay.style.zIndex = '9999';
 }
 
 function closeBottomSheet() {
