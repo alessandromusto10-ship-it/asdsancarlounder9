@@ -496,6 +496,5 @@ async loadLastResults() {
     container.innerHTML = `<p style="color: var(--danger);">Errore: ${err.message}</p>`;
   }
 }
-};
 
 window.HomePage = HomePage;
