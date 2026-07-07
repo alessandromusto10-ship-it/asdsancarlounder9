@@ -16,49 +16,63 @@ const Auth = {
     return data;
   },
 
-  async signUp(email, password, fullName, role, playerId = null) {
-    console.log('🔍 signUp chiamata con:', { email, role, playerId });
-    
-    const { data, error } = await db.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName, role, player_id: playerId }
-      }
-    });
-    
-    if (error) {
-      console.error('❌ Errore signUp:', error);
-      throw error;
+async signUp(email, password, fullName, role, playerId = null) {
+  console.log('🔍 signUp chiamata con:', { email, role, playerId });
+  
+  // ✅ CONTROLLO WHITELIST PER I GENITORI
+  if (role === 'genitore') {
+    const { data: authorized, error: authErr } = await db
+      .from('authorized_parents')
+      .select('player_id')
+      .eq('email', email.toLowerCase().trim())
+      .single();
+      
+    if (authErr || !authorized) {
+      throw new Error(' Email non autorizzata. Contatta il mister per essere inserito nella lista.');
     }
     
-    console.log('✅ User creato:', data.user);
-    
-    // Se è un genitore e ha selezionato un giocatore, associa tramite RPC
-    if (role === 'genitore' && playerId && data.user) {
-      try {
-        console.log('🔗 Tentativo di associazione giocatore:', playerId);
-        
-        // Usa la funzione SQL che bypassa il RLS
-        const { data: result, error: rpcError } = await db
-          .rpc('associate_parent_to_player', {
-            p_player_id: playerId,
-            p_parent_id: data.user.id
-          });
-        
-        if (rpcError) {
-          console.error('❌ Errore RPC associazione:', rpcError);
-          console.warn('⚠️ Associazione fallita, ma registrazione completata');
-        } else {
-          console.log('✅ Associazione riuscita:', result);
-        }
-      } catch (err) {
-        console.error(' Errore nell\'associazione genitore-figlio:', err);
-      }
+    // Se l'utente non ha specificato player_id, usa quello della whitelist
+    if (!playerId && authorized.player_id) {
+      playerId = authorized.player_id;
     }
-    
-    return data;
-  },
+  }
+
+  const { data, error } = await db.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: fullName, role, player_id: playerId }
+    }
+  });
+  
+  if (error) {
+    console.error('❌ Errore signUp:', error);
+    throw error;
+  }
+  
+  console.log('✅ User creato:', data.user);
+  
+  // Associazione genitore-figlio tramite RPC
+  if (role === 'genitore' && playerId && data.user) {
+    try {
+      console.log('🔗 Tentativo di associazione giocatore:', playerId);
+      const { data: result, error: rpcError } = await db
+        .rpc('associate_parent_to_player', {
+          p_player_id: playerId,
+          p_parent_id: data.user.id
+        });
+      if (rpcError) {
+        console.error('❌ Errore RPC associazione:', rpcError);
+      } else {
+        console.log('✅ Associazione riuscita:', result);
+      }
+    } catch (err) {
+      console.error('❌ Errore nell\'associazione genitore-figlio:', err);
+    }
+  }
+  
+  return data;
+},
 
   async signInWithGoogle() {
     const { data, error } = await db.auth.signInWithOAuth({
