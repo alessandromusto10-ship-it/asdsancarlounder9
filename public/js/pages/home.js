@@ -425,72 +425,77 @@ const HomePage = {
     }
   },
 
-  async loadLastResults() {
-    const container = document.getElementById('widget-last-results');
-    try {
-      const { data: teamData, error: tErr } = await db
-        .from('teams')
-        .select('id')
-        .eq('name', this.SANCARLO_TEAM_NAME)
-        .single();
-      if (tErr || !teamData) {
-        container.innerHTML = `
-          <div class="card-title">🏆 Ultimi Risultati</div>
-          <p style="color: var(--gray-500); text-align: center; padding: 12px;">
-            Squadra non trovata
-          </p>
-        `;
-        return;
-      }
-      const sanCarloId = teamData.id;
-      const today = new Date().toISOString().split('T')[0];
-      const { data, error } = await db
-        .from('matches')
-        .select(`*, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`)
-        .lte('match_date', today)
-        .not('home_won_periods', 'is', null)
-        .or(`home_team_id.eq.${sanCarloId},away_team_id.eq.${sanCarloId}`)
-        .order('match_date', { ascending: false })
-        .limit(1);
-      if (error) throw error;
-      if (!data || data.length === 0) {
-        container.innerHTML = `
-          <div class="card-title">🏆 Ultimi Risultati</div>
-          <p style="color: var(--gray-500); text-align: center; padding: 12px;">
-            Nessun risultato disponibile
-          </p>
-        `;
-        return;
-      }
-      const resultsHtml = data.map(m => {
-        const dateObj = new Date(m.match_date);
-        const homeName = m.home_team?.name || 'Casa';
-        const awayName = m.away_team?.name || 'Ospite';
-        const score = `${m.home_won_periods ?? '-'} - ${m.away_won_periods ?? '-'}`;
-        return `
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--gray-200);">
-            <div style="flex: 1;">
-              <div style="font-size: 11px; color: var(--gray-500);">
-                ${dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })} · G${m.matchday || '?'}
-              </div>
-              <div style="font-weight: 600; font-size: 14px; margin-top: 2px;">
-                ${homeName} vs ${awayName}
-              </div>
-            </div>
-            <div style="font-size: 18px; font-weight: 700; color: var(--granata); min-width: 50px; text-align: center;">
-              ${score}
-            </div>
-          </div>
-        `;
-      }).join('');
+async loadLastResults() {
+  const container = document.getElementById('widget-last-results');
+  try {
+    const { data: teamData, error: tErr } = await db
+      .from('teams')
+      .select('id')
+      .eq('name', this.SANCARLO_TEAM_NAME)
+      .single();
+    if (tErr || !teamData) {
       container.innerHTML = `
-        <div class="card-title"> Ultimi Risultati</div>
-        ${resultsHtml}
+        <div class="card-title">🏆 Ultimi Risultati</div>
+        <p style="color: var(--gray-500); text-align: center; padding: 12px;">
+          Squadra non trovata
+        </p>
       `;
-    } catch (err) {
-      container.innerHTML = `<p style="color: var(--danger);">Errore: ${err.message}</p>`;
+      return;
     }
+    const sanCarloId = teamData.id;
+    const today = new Date().toISOString().split('T')[0];
+    
+    // ✅ Query corretta: prende SOLO l'ultimo risultato della nostra squadra
+    const { data, error } = await db
+      .from('matches')
+      .select(`*, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`)
+      .lte('match_date', today)
+      .or(`home_team_id.eq.${sanCarloId},away_team_id.eq.${sanCarloId}`)
+      .order('match_date', { ascending: false })
+      .limit(1); // ✅ Solo l'ultimo inserito
+
+    if (error) {
+      console.error('❌ Errore DB risultati:', error);
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      container.innerHTML = `
+        <div class="card-title">🏆 Ultimi Risultati</div>
+        <p style="color: var(--gray-500); text-align: center; padding: 12px;">
+          Nessun risultato disponibile
+        </p>
+      `;
+      return;
+    }
+    
+    const m = data[0];
+    const homeName = m.home_team?.name || 'Casa';
+    const awayName = m.away_team?.name || 'Ospite';
+    const score = `${m.home_won_periods ?? '-'} - ${m.away_won_periods ?? '-'}`;
+    const dateStr = new Date(m.match_date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
+    
+    container.innerHTML = `
+      <div class="card-title">🏆 Ultimi Risultati</div>
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--gray-200);">
+        <div style="flex: 1;">
+          <div style="font-size: 11px; color: var(--gray-500);">
+            ${dateStr} · G${m.matchday || '?'}
+          </div>
+          <div style="font-weight: 600; font-size: 14px; margin-top: 2px;">
+            ${homeName} vs ${awayName}
+          </div>
+        </div>
+        <div style="font-size: 18px; font-weight: 700; color: var(--granata); min-width: 50px; text-align: center;">
+          ${score}
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    console.error('❌ Errore loadLastResults:', err);
+    container.innerHTML = `<p style="color: var(--danger);">Errore: ${err.message}</p>`;
   }
+}
 };
 
 window.HomePage = HomePage;
