@@ -280,7 +280,7 @@ try {
                      title="Modifica">✏️</button>
              <button class="icon-btn" onclick="RosterPage.deletePlayer('${p.id}', '${p.last_name} ${p.first_name}', ${hasParent})" 
                      style="background: var(--danger); color: var(--white); width: 32px; height: 32px; font-size: 14px;" 
-                     title="Elimina">️</button>
+                     title="Elimina">️🗑️</button>
            </div>
          </div>
        </div>
