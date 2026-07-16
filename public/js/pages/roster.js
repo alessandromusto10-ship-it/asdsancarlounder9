@@ -262,44 +262,47 @@ const RosterPage = {
           medicalBadge = `<span class="badge" style="background: var(--gray-200); color: var(--gray-700);">🩺 Mancante</span>`;
         }
 
-        // Genitore collegato
-        const parentInfo = p.parent
-          ? `<div style="font-size: 11px; color: var(--gray-500); margin-top: 2px;">👨‍👩‍👦 ${p.parent.full_name || p.parent.email}</div>`
-          : '';
-
-        const hasParent = !!p.parent;
-
-        return `
-          <div class="card" style="margin-bottom: 8px; padding: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-              <div style="flex: 1;">
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <strong style="font-size: 15px; color: var(--gray-900);">
-                    ${emoji} ${p.last_name} ${p.first_name}
-                  </strong>
-                  <span class="badge badge-granata">${roleName}</span>
-                  ${medicalBadge}
-                </div>
-                ${age ? `<div style="font-size: 12px; color: var(--gray-500); margin-top: 2px;">🎂 ${age}${p.birth_date ? ' (' + formatDate(p.birth_date) + ')' : ''}</div>` : ''}
-                ${parentInfo}
-              </div>
-              <div style="display: flex; gap: 6px;">
-                <button class="icon-btn" onclick="RosterPage.openEditModal('${p.id}')" 
-                        style="background: var(--granata); color: var(--white); width: 32px; height: 32px; font-size: 14px;" 
-                        title="Modifica">✏️</button>
-                <button class="icon-btn" onclick="RosterPage.deletePlayer('${p.id}', '${p.last_name} ${p.first_name}', ${hasParent})" 
-                        style="background: var(--danger); color: var(--white); width: 32px; height: 32px; font-size: 14px;" 
-                        title="Elimina">🗑️</button>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-    } catch (err) {
-      container.innerHTML = `<p style="color: var(--danger);">Errore: ${err.message}</p>`;
-    }
-  },
+// ✅ Genitori collegati (ENTRAMBI se presenti)
+     const parent1Info = p.parent
+       ? `<span>${p.parent.full_name || p.parent.email}</span>`
+       : '';
+     const parent2Info = p.parent2
+       ? `<span>${p.parent2.full_name || p.parent2.email}</span>`
+       : '';
+     const parentsHtml = (parent1Info || parent2Info)
+       ? `<div style="font-size: 11px; color: var(--gray-500); margin-top: 2px;">👨‍👩‍ ${parent1Info}${parent1Info && parent2Info ? ' · ' : ''}${parent2Info}</div>`
+       : '';
+     const hasParent = !!(p.parent || p.parent2);
+     return `
+       <div class="card" style="margin-bottom: 8px; padding: 12px;">
+         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+           <div style="flex: 1;">
+             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+               <strong style="font-size: 15px; color: var(--gray-900);">
+                 ${emoji} ${p.last_name} ${p.first_name}
+               </strong>
+               <span class="badge badge-granata">${roleName}</span>
+               ${medicalBadge}
+             </div>
+             ${age ? `<div style="font-size: 12px; color: var(--gray-500); margin-top: 2px;">🎂 ${age}${p.birth_date ? ' (' + formatDate(p.birth_date) + ')' : ''}</div>` : ''}
+             ${parentsHtml}
+           </div>
+           <div style="display: flex; gap: 6px;">
+             <button class="icon-btn" onclick="RosterPage.openEditModal('${p.id}')" 
+                     style="background: var(--granata); color: var(--white); width: 32px; height: 32px; font-size: 14px;" 
+                     title="Modifica">✏️</button>
+             <button class="icon-btn" onclick="RosterPage.deletePlayer('${p.id}', '${p.last_name} ${p.first_name}', ${hasParent})" 
+                     style="background: var(--danger); color: var(--white); width: 32px; height: 32px; font-size: 14px;" 
+                     title="Elimina">🗑️</button>
+           </div>
+         </div>
+       </div>
+     `;
+   }).join('');
+ } catch (err) {
+   container.innerHTML = `<p style="color: var(--danger);">Errore: ${err.message}</p>`;
+ }
+},
 
   async addPlayer() {
     const first = document.getElementById('pl-first').value.trim();
