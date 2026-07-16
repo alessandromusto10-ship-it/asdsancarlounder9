@@ -263,14 +263,10 @@ const RosterPage = {
         }
 
 // ✅ Genitori collegati (ENTRAMBI se presenti)
-     const parent1Info = p.parent
-       ? `<span>${p.parent.full_name || p.parent.email}</span>`
-       : '';
-     const parent2Info = p.parent2
-       ? `<span>${p.parent2.full_name || p.parent2.email}</span>`
-       : '';
-     const parentsHtml = (parent1Info || parent2Info)
-       ? `<div style="font-size: 11px; color: var(--gray-500); margin-top: 2px;">👨‍👩‍ ${parent1Info}${parent1Info && parent2Info ? ' · ' : ''}${parent2Info}</div>`
+     const parent1Name = p.parent?.full_name || p.parent?.email || '';
+     const parent2Name = p.parent2?.full_name || p.parent2?.email || '';
+     const parentsHtml = (parent1Name || parent2Name)
+       ? `<div style="font-size: 11px; color: var(--gray-500); margin-top: 2px;">👨‍‍👦 ${parent1Name}${parent1Name && parent2Name ? ' · ' : ''}${parent2Name}</div>`
        : '';
      const hasParent = !!(p.parent || p.parent2);
      return `
@@ -290,7 +286,7 @@ const RosterPage = {
            <div style="display: flex; gap: 6px;">
              <button class="icon-btn" onclick="RosterPage.openEditModal('${p.id}')" 
                      style="background: var(--granata); color: var(--white); width: 32px; height: 32px; font-size: 14px;" 
-                     title="Modifica">✏️</button>
+                     title="Modifica">️</button>
              <button class="icon-btn" onclick="RosterPage.deletePlayer('${p.id}', '${p.last_name} ${p.first_name}', ${hasParent})" 
                      style="background: var(--danger); color: var(--white); width: 32px; height: 32px; font-size: 14px;" 
                      title="Elimina">🗑️</button>
