@@ -398,9 +398,8 @@ try {
     if (!confirm(message)) return;
 
     try {
-      // Se ha un genitore, prima scollega
       if (hasParent) {
-        await db.from('players').update({ parent_id: null }).eq('id', id);
+        await db.from('players').update({ parent_id: null, parent_id_2: null }).eq('id', id);
       }
       
       const { error } = await db.from('players').delete().eq('id', id);
