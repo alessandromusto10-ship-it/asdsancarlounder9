@@ -193,80 +193,71 @@ const RosterPage = {
   },
 
   async loadPlayers() {
-    const container = document.getElementById('players-list');
-    container.innerHTML = '<div class="spinner"></div>';
-
-    try {
-      let query = db
-        .from('players')
-        .select(`
-          *,
-          parent:profiles!players_parent_id_fkey(full_name, email)
-        `)
-        .order('last_name', { ascending: true })
-        .order('first_name', { ascending: true });
-
-      if (this.filterRole !== 'all') {
-        query = query.eq('role', this.filterRole);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      if (!data || data.length === 0) {
-        container.innerHTML = `
-          <p style="color: var(--gray-500); text-align: center; padding: 20px;">
-            📭 Nessun giocatore${this.filterRole !== 'all' ? ' con questo ruolo' : ''}
-          </p>
-        `;
-        return;
-      }
-
-      const roleEmoji = {
-        'portiere': '🧤',
-        'difensore': '🛡️',
-        'centrocampista': '⚡',
-        'attaccante': '🎯'
-      };
-
-      const today = new Date().toISOString().split('T')[0];
-
-      container.innerHTML = data.map(p => {
-        const emoji = roleEmoji[p.role] || '⚽';
-        const roleName = p.role ? p.role.charAt(0).toUpperCase() + p.role.slice(1) : 'N.D.';
-
-        // Calcola età
-        let age = '';
-        if (p.birth_date) {
-          const birth = new Date(p.birth_date);
-          const ageNum = Math.floor((new Date() - birth) / (365.25 * 24 * 60 * 60 * 1000));
-          age = `${ageNum} anni`;
-        }
-
-        // Stato certificato medico
-        let medicalBadge = '';
-        if (p.medical_certificate) {
-          if (p.medical_expiry && p.medical_expiry < today) {
-            medicalBadge = `<span class="badge badge-danger">🩺 Scaduto</span>`;
-          } else if (p.medical_expiry) {
-            const daysUntil = Math.ceil((new Date(p.medical_expiry) - new Date()) / (1000 * 60 * 60 * 24));
-            if (daysUntil <= 30) {
-              medicalBadge = `<span class="badge badge-warning">🩺 Scade tra ${daysUntil}g</span>`;
-            } else {
-              medicalBadge = `<span class="badge badge-success">🩺 OK</span>`;
-            }
-          } else {
-            medicalBadge = `<span class="badge badge-success">🩺 Presente</span>`;
-          }
-        } else {
-          medicalBadge = `<span class="badge" style="background: var(--gray-200); color: var(--gray-700);">🩺 Mancante</span>`;
-        }
-
-// ✅ Genitori collegati (ENTRAMBI se presenti)
+const container = document.getElementById('players-list');
+container.innerHTML = '<div class="spinner"></div>';
+try {
+   let query = db
+     .from('players')
+     .select(`
+       *,
+       parent:profiles!players_parent_id_fkey(full_name, email),
+       parent2:profiles!players_parent_id_2_fkey(full_name, email)
+     `)
+     .order('last_name', { ascending: true })
+     .order('first_name', { ascending: true });
+   if (this.filterRole !== 'all') {
+     query = query.eq('role', this.filterRole);
+   }
+   const { data, error } = await query;
+   if (error) throw error;
+   if (!data || data.length === 0) {
+     container.innerHTML = `
+       <p style="color: var(--gray-500); text-align: center; padding: 20px;">
+          Nessun giocatore${this.filterRole !== 'all' ? ' con questo ruolo' : ''}
+       </p>
+     `;
+     return;
+   }
+   const roleEmoji = {
+     'portiere': '🧤',
+     'difensore': '🛡️',
+     'centrocampista': '⚡',
+     'attaccante': '🎯'
+   };
+   const today = new Date().toISOString().split('T')[0];
+   container.innerHTML = data.map(p => {
+     const emoji = roleEmoji[p.role] || '⚽';
+     const roleName = p.role ? p.role.charAt(0).toUpperCase() + p.role.slice(1) : 'N.D.';
+     // Calcola età
+     let age = '';
+     if (p.birth_date) {
+       const birth = new Date(p.birth_date);
+       const ageNum = Math.floor((new Date() - birth) / (365.25 * 24 * 60 * 60 * 1000));
+       age = `${ageNum} anni`;
+     }
+     // Stato certificato medico
+     let medicalBadge = '';
+     if (p.medical_certificate) {
+       if (p.medical_expiry && p.medical_expiry < today) {
+         medicalBadge = `<span class="badge badge-danger">🩺 Scaduto</span>`;
+       } else if (p.medical_expiry) {
+         const daysUntil = Math.ceil((new Date(p.medical_expiry) - new Date()) / (1000 * 60 * 60 * 24));
+         if (daysUntil <= 30) {
+           medicalBadge = `<span class="badge badge-warning">🩺 Scade tra ${daysUntil}g</span>`;
+         } else {
+           medicalBadge = `<span class="badge badge-success">🩺 OK</span>`;
+         }
+       } else {
+         medicalBadge = `<span class="badge badge-success">🩺 Presente</span>`;
+       }
+     } else {
+       medicalBadge = `<span class="badge" style="background: var(--gray-200); color: var(--gray-700);">🩺 Mancante</span>`;
+     }
+     // ✅ Genitori collegati (ENTRAMBI se presenti)
      const parent1Name = p.parent?.full_name || p.parent?.email || '';
      const parent2Name = p.parent2?.full_name || p.parent2?.email || '';
-     const parentsHtml = (parent1Name || parent2Name)
-       ? `<div style="font-size: 11px; color: var(--gray-500); margin-top: 2px;">👨‍‍👦 ${parent1Name}${parent1Name && parent2Name ? ' · ' : ''}${parent2Name}</div>`
+     const parentInfo = (parent1Name || parent2Name)
+       ? `<div style="font-size: 11px; color: var(--gray-500); margin-top: 2px;">👨‍👩👦 ${parent1Name}${parent1Name && parent2Name ? ' · ' : ''}${parent2Name}</div>`
        : '';
      const hasParent = !!(p.parent || p.parent2);
      return `
@@ -280,16 +271,16 @@ const RosterPage = {
                <span class="badge badge-granata">${roleName}</span>
                ${medicalBadge}
              </div>
-             ${age ? `<div style="font-size: 12px; color: var(--gray-500); margin-top: 2px;">🎂 ${age}${p.birth_date ? ' (' + formatDate(p.birth_date) + ')' : ''}</div>` : ''}
-             ${parentsHtml}
+             ${age ? `<div style="font-size: 12px; color: var(--gray-500); margin-top: 2px;"> ${age}${p.birth_date ? ' (' + formatDate(p.birth_date) + ')' : ''}</div>` : ''}
+             ${parentInfo}
            </div>
            <div style="display: flex; gap: 6px;">
              <button class="icon-btn" onclick="RosterPage.openEditModal('${p.id}')" 
                      style="background: var(--granata); color: var(--white); width: 32px; height: 32px; font-size: 14px;" 
-                     title="Modifica">️</button>
+                     title="Modifica">✏️</button>
              <button class="icon-btn" onclick="RosterPage.deletePlayer('${p.id}', '${p.last_name} ${p.first_name}', ${hasParent})" 
                      style="background: var(--danger); color: var(--white); width: 32px; height: 32px; font-size: 14px;" 
-                     title="Elimina">🗑️</button>
+                     title="Elimina">️</button>
            </div>
          </div>
        </div>
