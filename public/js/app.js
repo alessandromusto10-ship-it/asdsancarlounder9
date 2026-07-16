@@ -256,33 +256,15 @@ db.auth.getSession().then(({ data: { session } }) => {
   init();
 });
 
-db.auth.onAuthStateChange((event, session) => {
+db.auth.onAuthStateChange((event) => {
   console.log(' Auth state change:', event);
-  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+  if (event === 'SIGNED_IN') {
     init();
   } else if (event === 'SIGNED_OUT') {
-    Router.navigate('/login');
-  }
-});
-
-// ✅ Listener migliorato: gestisce solo eventi specifici
-db.auth.onAuthStateChange((event, session) => {
-  console.log(' Auth state change:', event);
-  
-  // Solo SIGNED_OUT esplicito (quando l'utente fa logout)
-  if (event === 'SIGNED_OUT') {
-    console.log('👋 Logout effettuato');
     $('#app-header')?.classList.add('hidden');
     $('#bottom-nav')?.classList.add('hidden');
     Router.navigate('/login');
-  }
-  // TOKEN_REFRESHED: non fare nulla, la sessione resta attiva
-  else if (event === 'TOKEN_REFRESHED') {
-    console.log('🔄 Token aggiornato, sessione mantenuta');
-  }
-  // USER_UPDATED: aggiorna la UI se necessario
-  else if (event === 'USER_UPDATED') {
-    console.log('👤 Utente aggiornato');
+  } else if (event === 'USER_UPDATED') {
     init();
   }
 });
