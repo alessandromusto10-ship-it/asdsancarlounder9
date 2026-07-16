@@ -257,7 +257,7 @@ try {
      const parent1Name = p.parent?.full_name || p.parent?.email || '';
      const parent2Name = p.parent2?.full_name || p.parent2?.email || '';
      const parentInfo = (parent1Name || parent2Name)
-       ? `<div style="font-size: 11px; color: var(--gray-500); margin-top: 2px;">👨‍👩👦 ${parent1Name}${parent1Name && parent2Name ? ' · ' : ''}${parent2Name}</div>`
+       ? `<div style="font-size: 11px; color: var(--gray-500); margin-top: 2px;">👨‍👩 ${parent1Name}${parent1Name && parent2Name ? ' · ' : ''}${parent2Name}</div>`
        : '';
      const hasParent = !!(p.parent || p.parent2);
      return `
