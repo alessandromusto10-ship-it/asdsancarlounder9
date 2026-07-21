@@ -9,7 +9,7 @@ const WhatsAppPage = {
   EQUIPMENT_LIST: [
     { id: 'borraccia', label: 'Borraccia', emoji: '💧' },
     { id: 'pantaloncini', label: 'Pantaloncini ERREA', emoji: '🩳' },
-    { id: 'parastinchi', label: 'Parastinchi', emoji: '️' },
+    { id: 'parastinchi', label: 'Parastinchi', emoji: '️🛡️' },
     { id: 'scarpe', label: 'Scarpe da calcio', emoji: '👟' },
     { id: 'maglia', label: 'Maglia con numero', emoji: '👕' },
     { id: 'calzettoni', label: 'Calzettoni', emoji: '🧦' },
